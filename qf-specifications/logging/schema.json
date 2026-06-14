@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://questionforge.dev/schemas/logging/v1",
+  "title": "QuestionForge Log Event",
+  "description": "Schema for unified logging across all QuestionForge packages",
+  "type": "object",
+  "required": ["ts", "v", "session_id", "mcp", "tool", "event", "level"],
+  "properties": {
+    "ts": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp in UTC (ends with Z)",
+      "examples": ["2026-01-16T22:30:00.123Z"]
+    },
+    "v": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Schema version for future compatibility",
+      "default": 1
+    },
+    "session_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "UUID linking all events in a session",
+      "examples": ["abc12345-6789-def0-1234-567890abcdef"]
+    },
+    "mcp": {
+      "type": "string",
+      "enum": ["qf-pipeline", "qf-scaffolding", "qti-core"],
+      "description": "Which package generated this event"
+    },
+    "tool": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Tool or function name",
+      "examples": ["step0_start", "step2_validate", "load_stage", "m2_stage3"]
+    },
+    "event": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Event type describing what happened",
+      "examples": ["session_start", "tool_end", "user_decision", "tool_error"]
+    },
+    "level": {
+      "type": "string",
+      "enum": ["debug", "info", "warn", "error"],
+      "description": "Log level / severity"
+    },
+    "data": {
+      "type": "object",
+      "description": "Event-specific structured data",
+      "additionalProperties": true
+    },
+    "duration_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Operation duration in milliseconds"
+    },
+    "parent_id": {
+      "type": "string",
+      "description": "Links to parent event ID for hierarchical logging"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,37 @@
+{
+  "name": "qf-scaffolding",
+  "private": true,
+  "version": "0.6.0",
+  "description": "QuestionForge Scaffolding MCP - M1-M4 + M5 Simple methodology guidance",
+  "type": "module",
+  "main": "build/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node build/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "js-yaml": "^4.1.1",
+    "pdf-parse": "^2.4.5",
+    "yaml": "^2.8.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.10.2",
+    "@types/pdf-parse": "^1.1.5",
+    "typescript": "^5.7.2",
+    "vitest": "^4.0.18"
+  },
+  "keywords": [
+    "mcp",
+    "scaffolding",
+    "education",
+    "assessment"
+  ],
+  "author": "Niklas Karlsson",
+  "license": "CC-BY-NC-SA-4.0"
+}

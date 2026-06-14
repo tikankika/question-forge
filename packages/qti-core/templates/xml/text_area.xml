@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+QTI 2.2 Text Area Template for Inspera
+Version: 1.0
+Last Updated: October 2025
+
+This template defines the structure for text 
+
+
+Difference from Extended Text:
+- Plain text only (no formatting toolbar)
+- Typically shorter responses
+- inspera:variant="textarea"
+- usePlainText="true"
+
+Metadata placeholders:
+- {{IDENTIFIER}}: Unique question identifier (alphanumeric + underscores)
+- {{TITLE}}: Question title for display
+- {{LANGUAGE}}: ISO 639-1 language code (e.g., en, sv, no)
+- {{MAX_SCORE}}: Maximum points for the question
+
+Content placeholders:
+- {{QUESTION_TEXT}}: The question prompt with instructions (XHTML content)
+- {{INITIAL_LINES}}: Initial number of lines in text area (e.g., 3, 5, 10)
+- {{FIELD_WIDTH}}: Width of text area (e.g., "100%", "50%")
+- {{SHOW_WORD_COUNT}}: true or false
+- {{EDITOR_PROMPT}}: Placeholder text in the text area
+
+Note: For multi-part questions with multiple text areas, create multiple
+responseDeclaration and extendedTextInteraction elements with identifiers
+RESPONSE-1, RESPONSE-2, RESPONSE-3, etc.
+-->
+<assessmentItem
+    adaptive="false"
+    identifier="{{IDENTIFIER}}"
+    inspera:objectType="content_question_qti2_text_area"
+    timeDependent="false"
+    title="{{TITLE}}"
+    xmlns="http://www.imsglobal.org/xsd/imsqti_v2p2"
+    xmlns:inspera="http://www.inspera.no/qti"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.imsglobal.org/xsd/imsqti_v2p2 http://www.imsglobal.org/xsd/qti/qtiv2p2/imsqti_v2p2.xsd">
+
+    <!-- Response Declaration: Defines the text response capture -->
+    <responseDeclaration baseType="string" cardinality="single" identifier="RESPONSE-1">
+        <!-- No correct response - manual grading required -->
+    </responseDeclaration>
+
+    <!-- Outcome Declaration: Score -->
+    <outcomeDeclaration baseType="float" cardinality="single" identifier="SCORE">
+        <defaultValue>
+            <value>0</value>
+        </defaultValue>
+    </outcomeDeclaration>
+
+    <!-- Outcome Declaration: Feedback identifier -->
+    <outcomeDeclaration baseType="identifier" cardinality="single" identifier="FEEDBACK"/>
+
+    <!-- Template Declaration: Maximum score for complete answer -->
+    <templateDeclaration baseType="float" cardinality="single" identifier="SCORE_ALL_CORRECT">
+        <defaultValue>
+            <value>{{MAX_SCORE}}</value>
+        </defaultValue>
+    </templateDeclaration>
+
+    <!-- Item Body: Question content and text area -->
+    <itemBody inspera:defaultLanguage="{{LANGUAGE}}" inspera:supportedLanguages="{{LANGUAGE}}">
+        <!-- Optional question illustration/image area -->
+        <div class="question-main-illustration">
+            {{QUESTION_IMAGES}}
+        </div>
+
+        <!-- Question text with instructions -->
+        {{QUESTION_TEXT}}
+
+        <!-- Extended Text Interaction: Plain text area for short response -->
+        <extendedTextInteraction
+            autoExpand="true"
+            initialNumberOfLines="{{INITIAL_LINES}}"
+            inspera:fieldWidth="{{FIELD_WIDTH}}"
+            inspera:showWordCount="{{SHOW_WORD_COUNT}}"
+            inspera:variant="textarea"
+            responseIdentifier="RESPONSE-1"
+            usePlainText="true">
+            <prompt>{{EDITOR_PROMPT}}</prompt>
+        </extendedTextInteraction>
+    </itemBody>
+
+    <!-- Response Processing: Determines feedback based on whether answered -->
+    <responseProcessing>
+        <!-- Check if student answered or left blank -->
+        <responseCondition>
+            <responseIf>
+                <and>
+                    <isNull>
+                        <variable identifier="RESPONSE-1"/>
+                    </isNull>
+                </and>
+                <setOutcomeValue identifier="FEEDBACK">
+                    <baseValue baseType="identifier">feedback_unanswered</baseValue>
+                </setOutcomeValue>
+            </responseIf>
+            <responseElse>
+                <setOutcomeValue identifier="FEEDBACK">
+                    <baseValue baseType="identifier">feedback_answered</baseValue>
+                </setOutcomeValue>
+            </responseElse>
+        </responseCondition>
+
+        <!-- Enforce maximum score upper bound -->
+        <responseCondition inspera:type="max_score_upper_bound">
+            <responseIf>
+                <and>
+                    <gte>
+                        <variable identifier="SCORE"/>
+                        <baseValue baseType="float">{{MAX_SCORE}}</baseValue>
+                    </gte>
+                </and>
+                <setOutcomeValue identifier="SCORE">
+                    <baseValue baseType="float">{{MAX_SCORE}}</baseValue>
+                </setOutcomeValue>
+            </responseIf>
+        </responseCondition>
+    </responseProcessing>
+
+    <!-- Modal Feedback: Feedback messages -->
+    <modalFeedback identifier="feedback_unanswered" outcomeIdentifier="FEEDBACK" showHide="show"/>
+    <modalFeedback identifier="feedback_answered" outcomeIdentifier="FEEDBACK" showHide="show"/>
+
+</assessmentItem>

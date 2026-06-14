@@ -1,0 +1,272 @@
+# TYPE REQUIREMENT: multiple_response
+# Flervalsfråga med FLERA rätta svar
+# Version: 1.0
+# Inspera type: multipleResponse
+
+name: "Flervalsfråga (flera rätta svar)"
+name_en: "Multiple Response"
+code: "multiple_response"
+inspera_type: "multipleResponse"
+description: |
+  Fråga där studenten väljer FLERA svar bland alternativen.
+  Används för att testa djupare förståelse - "välj alla som stämmer".
+  Delpoäng möjligt (partial credit).
+
+# ════════════════════════════════════════════════════════════════════
+# REQUIRED METADATA
+# ════════════════════════════════════════════════════════════════════
+
+required_metadata:
+  - field: "^question"
+    description: "Fråge-ID"
+    pattern: "Q\\d{3}[A-Z]?"
+    examples: ["Q001", "Q002B"]
+    required: true
+    
+  - field: "^type"
+    description: "Frågetyp"
+    value: "multiple_response"
+    required: true
+    
+  - field: "^identifier"
+    description: "Unik identifierare"
+    pattern: "[A-Z][A-Z0-9_]*"
+    examples: ["BIO_MR_Q001"]
+    required: true
+    
+  - field: "^points"
+    description: "Total poäng"
+    type: "integer"
+    min: 1
+    max: 10
+    notes: "Ofta 2-3 poäng för MR-frågor"
+    required: true
+    
+  - field: "^labels"
+    description: "Etiketter"
+    must_contain_bloom: true
+    must_contain_difficulty: true
+    required: true
+
+# ════════════════════════════════════════════════════════════════════
+# REQUIRED FIELDS
+# ════════════════════════════════════════════════════════════════════
+
+required_fields:
+
+  - name: "question_text"
+    description: "Frågetexten"
+    required: true
+    notes:
+      - "Bör innehålla '(Välj alla korrekta)' eller liknande"
+      - "Tydliggör att flera svar förväntas"
+    format: |
+      @field: question_text
+      Vilka påståenden är korrekta? (Välj alla som stämmer)
+      @end_field
+
+  - name: "options"
+    description: "Svarsalternativ"
+    required: true
+    constraints:
+      min_items: 4
+      max_items: 8
+      item_format: "^[A-H]\\. .+"
+      recommended_correct: "2-4 rätta av 4-6 alternativ"
+    format: |
+      @field: options
+      A. Första alternativet
+      B. Andra alternativet
+      C. Tredje alternativet
+      D. Fjärde alternativet
+      E. Femte alternativet
+      F. Sjätte alternativet
+      @end_field
+    notes:
+      - "Fler alternativ än single choice (ofta 6)"
+      - "Balans mellan rätta och felaktiga"
+
+  - name: "answer"
+    description: "Rätta svar (flera)"
+    required: true
+    constraints:
+      format: "comma_separated_letters"
+      min_correct: 2
+      example: "A, B, D"
+    format: |
+      @field: answer
+      A, C, D
+      @end_field
+    notes:
+      - "Kommaseparerade bokstäver"
+      - "Minst 2 rätta svar (annars använd single choice)"
+
+  - name: "scoring"
+    description: "Poängberäkning"
+    required: true
+    subfields:
+      - name: "type"
+        values: ["PartialCredit", "AllOrNothing"]
+        default: "PartialCredit"
+      - name: "correct_points"
+        description: "Poäng per rätt markering"
+      - name: "incorrect_penalty"
+        description: "Avdrag per fel markering (0 = inget avdrag)"
+    format: |
+      @field: scoring
+      ^Type PartialCredit
+      ^Correct_Points 1
+      ^Incorrect_Penalty 0.5
+      ^Total 3
+      @end_field
+    notes:
+      - "PartialCredit rekommenderas"
+      - "Vanligt: +1 per rätt, -0.5 per fel, min 0"
+
+  - name: "feedback"
+    description: "Feedback"
+    required: true
+    subfields:
+      - name: "general_feedback"
+        required: true
+      - name: "correct_feedback"
+        required: true
+      - name: "incorrect_feedback"
+        required: true
+      - name: "partial_feedback"
+        required: true
+        description: "Feedback vid delvis rätt"
+      - name: "unanswered_feedback"
+        required: true
+    format: |
+      @field: feedback
+      
+      @@field: general_feedback
+      Förklaring...
+      @@end_field
+      
+      @@field: correct_feedback
+      Alla rätt! ...
+      @@end_field
+      
+      @@field: incorrect_feedback
+      Tyvärr fel. ...
+      @@end_field
+      
+      @@field: partial_feedback
+      Delvis rätt. ...
+      @@end_field
+      
+      @@field: unanswered_feedback
+      Besvara frågan för att få feedback.
+      @@end_field
+      
+      @end_field
+
+# ════════════════════════════════════════════════════════════════════
+# COMMON ISSUES
+# ════════════════════════════════════════════════════════════════════
+
+common_issues:
+
+  - id: "single_correct_answer"
+    severity: "warning"
+    detect: "answer innehåller bara en bokstav"
+    message: "Endast ett rätt svar - borde vara multiple_choice_single?"
+    ask_user: "Frågan har bara ett rätt svar. Byt till multiple_choice_single?"
+
+  - id: "missing_partial_feedback"
+    severity: "warning"
+    detect: "partial_feedback saknas"
+    message: "Saknar partial_feedback (feedback vid delvis rätt)"
+    suggest_content: true
+    default: "Du har några rätt! Granska alternativen igen."
+
+  - id: "missing_scoring"
+    severity: "critical"
+    detect: "scoring field saknas"
+    message: "Saknar scoring-information"
+    auto_fix: true
+    fix_template: |
+      @field: scoring
+      ^Type PartialCredit
+      ^Correct_Points 1
+      ^Incorrect_Penalty 0
+      ^Total {POINTS}
+      @end_field
+
+  - id: "all_answers_correct"
+    severity: "warning"
+    detect: "alla alternativ är markerade som rätt"
+    message: "Alla alternativ är rätta - är detta avsiktligt?"
+    ask_user: "Vill du ha minst ett felaktigt alternativ?"
+
+  - id: "missing_instruction"
+    severity: "info"
+    detect: "frågetext saknar 'välj alla' eller liknande"
+    message: "Frågan anger inte tydligt att flera svar förväntas"
+    suggest: "Lägg till '(Välj alla korrekta alternativ)'"
+
+# ════════════════════════════════════════════════════════════════════
+# COMPLETE EXAMPLE
+# ════════════════════════════════════════════════════════════════════
+
+complete_example: |
+  # Q002B Leverns viktiga funktioner
+  ^question Q002B
+  ^type multiple_response
+  ^identifier BIO_PHY_Q002B
+  ^title Leverns viktiga funktioner
+  ^points 3
+  ^labels #EXAMPLE_COURSE #Matsmältning #Understand #Medium
+  
+  @field: question_text
+  Vilka är leverns funktioner? (Välj alla korrekta alternativ)
+  @end_field
+  
+  @field: options
+  A. Producerar galla för fettsmältning
+  B. Avgiftar blodet från skadliga ämnen
+  C. Lagrar glykogen som energireserv
+  D. Producerar insulin för blodsockerreglering
+  E. Producerar enzymer för matsmältning
+  F. Neutraliserar magsyra i tolvfingertarmen
+  @end_field
+  
+  @field: answer
+  A, B, C
+  @end_field
+  
+  @field: scoring
+  ^Type PartialCredit
+  ^Correct_Points 1
+  ^Incorrect_Penalty 0.5
+  ^Minimum 0
+  ^Total 3
+  @end_field
+  
+  @field: feedback
+  
+  @@field: general_feedback
+  Levern har många viktiga funktioner: den producerar galla, avgiftar 
+  blodet, och lagrar glykogen. D, E och F är bukspottkörtelns funktioner.
+  @@end_field
+  
+  @@field: correct_feedback
+  Utmärkt! Du identifierade alla tre leverfunktioner korrekt.
+  @@end_field
+  
+  @@field: incorrect_feedback
+  Tänk på skillnaden mellan lever och bukspottkörtel.
+  @@end_field
+  
+  @@field: partial_feedback
+  Du har några rätt! Granska vilka funktioner som tillhör levern 
+  respektive bukspottkörteln.
+  @@end_field
+  
+  @@field: unanswered_feedback
+  Besvara frågan för att få feedback.
+  @@end_field
+  
+  @end_field

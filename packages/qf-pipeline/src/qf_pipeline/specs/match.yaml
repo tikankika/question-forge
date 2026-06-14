@@ -1,0 +1,318 @@
+# TYPE REQUIREMENT: match
+# Matchningsfråga (para ihop)
+# Version: 1.0
+# Inspera type: matchInteraction
+
+name: "Matchning / Para ihop"
+name_en: "Match / Matching"
+code: "match"
+inspera_type: "matchInteraction"
+description: |
+  Fråga där studenten parar ihop begrepp från två kolumner.
+  Bra för att testa förståelse av relationer, definitioner,
+  och kategoriseringar.
+
+# ════════════════════════════════════════════════════════════════════
+# REQUIRED METADATA
+# ════════════════════════════════════════════════════════════════════
+
+required_metadata:
+  - field: "^question"
+    pattern: "Q\\d{3}[A-Z]?"
+    required: true
+    
+  - field: "^type"
+    value: "match"
+    required: true
+    
+  - field: "^identifier"
+    pattern: "[A-Z][A-Z0-9_]*"
+    required: true
+    
+  - field: "^points"
+    type: "integer"
+    notes: "Vanligt: 1 poäng per korrekt par"
+    required: true
+    
+  - field: "^labels"
+    must_contain_bloom: true
+    must_contain_difficulty: true
+    required: true
+
+# ════════════════════════════════════════════════════════════════════
+# REQUIRED FIELDS
+# ════════════════════════════════════════════════════════════════════
+
+required_fields:
+
+  - name: "question_text"
+    description: "Instruktion för matchningen"
+    required: true
+    format: |
+      @field: question_text
+      Matcha varje begrepp med rätt beskrivning:
+      @end_field
+    notes:
+      - "Tydlig instruktion om vad som ska matchas"
+      - "Kan inkludera kontext eller bakgrund"
+
+  - name: "pairs"
+    description: "Paren som ska matchas"
+    required: true
+    constraints:
+      min_pairs: 3
+      max_pairs: 8
+      format: "markdown_table"
+    format: |
+      @field: pairs
+      | Begrepp | Beskrivning |
+      |---------|-------------|
+      | Mitos | Celldelning som ger två identiska celler |
+      | Meios | Celldelning som ger könsceller |
+      | Cytokinese | Delning av cytoplasman |
+      @end_field
+    alternative_format: |
+      @field: pairs
+      ^pair Mitos :: Celldelning som ger två identiska celler
+      ^pair Meios :: Celldelning som ger könsceller
+      ^pair Cytokinese :: Delning av cytoplasman
+      @end_field
+    notes:
+      - "Markdown-tabell är tydligast"
+      - "Alternativt ^pair med :: som separator"
+      - "Första kolumnen = vänster sida"
+      - "Andra kolumnen = höger sida (rätt matchning)"
+
+  - name: "feedback"
+    description: "Feedback"
+    required: true
+    subfields:
+      - name: "general_feedback"
+        required: true
+      - name: "correct_feedback"
+        required: true
+      - name: "incorrect_feedback"
+        required: true
+      - name: "partial_feedback"
+        required: true
+      - name: "unanswered_feedback"
+        required: true
+
+# ════════════════════════════════════════════════════════════════════
+# OPTIONAL FIELDS
+# ════════════════════════════════════════════════════════════════════
+
+optional_fields:
+
+  - name: "scoring"
+    description: "Poängberäkning"
+    format: |
+      @field: scoring
+      ^Type PartialCredit
+      ^Points_Per_Pair 1
+      ^Total 3
+      @end_field
+
+  - name: "distractors"
+    description: "Extra alternativ på höger sida (ingen matchning)"
+    format: |
+      @field: distractors
+      - Felaktig beskrivning 1
+      - Felaktig beskrivning 2
+      @end_field
+    notes:
+      - "Ökar svårighetsgraden"
+      - "Ger fler alternativ på höger sida än vänster"
+
+  - name: "shuffle"
+    description: "Blanda ordningen på båda sidorna"
+    format: |
+      ^shuffle Yes
+
+# ════════════════════════════════════════════════════════════════════
+# COMMON ISSUES
+# ════════════════════════════════════════════════════════════════════
+
+common_issues:
+
+  - id: "pairs_not_table"
+    severity: "warning"
+    detect: "pairs inte i tabellformat"
+    message: "Paren är inte formaterade som tabell"
+    transform_example:
+      old: |
+        Mitos - Celldelning som ger två identiska celler
+        Meios - Celldelning som ger könsceller
+      new: |
+        | Begrepp | Beskrivning |
+        |---------|-------------|
+        | Mitos | Celldelning som ger två identiska celler |
+        | Meios | Celldelning som ger könsceller |
+    auto_fix: true
+
+  - id: "too_few_pairs"
+    severity: "warning"
+    detect: "färre än 3 par"
+    message: "Endast {N} par - rekommenderat minimum är 3"
+    ask_user: "Lägg till fler par eller överväg annan frågetyp"
+
+  - id: "uneven_difficulty"
+    severity: "info"
+    detect: "manuell kontroll"
+    message: "Kontrollera att paren har liknande svårighetsgrad"
+    notes: |
+      Om ett par är uppenbart lätt att matcha (t.ex. unik term)
+      kan det göra hela frågan för lätt.
+
+  - id: "obvious_matching"
+    severity: "info"
+    detect: "manuell kontroll"
+    message: "Kontrollera att matchningen inte är för uppenbar"
+    notes: |
+      Undvik:
+      - Samma ord i båda kolumnerna
+      - Uppenbar grammatisk matchning
+      - Endast ett rimligt alternativ
+
+  - id: "missing_table_header"
+    severity: "warning"
+    detect: "tabell utan header-rad"
+    message: "Tabellen saknar rubrikrad"
+    auto_fix: true
+    fix: "Lägg till | Begrepp | Beskrivning | som första rad"
+
+  - id: "inconsistent_separator"
+    severity: "critical"
+    detect: "blandade separatorer (- och :: och |)"
+    message: "Inkonsekvent separator i par-definitioner"
+    ask_user: "Välj ett format: tabell (|) eller :: notation"
+
+  - id: "old_pairs_format"
+    severity: "critical"
+    detect: "## Pairs med markdown istället för @field:"
+    message: "Gammal pairs-format"
+    transform_example:
+      old: |
+        ## Pairs
+        | Begrepp | Beskrivning |
+        |---------|-------------|
+        | Mitos | ... |
+      new: |
+        @field: pairs
+        | Begrepp | Beskrivning |
+        |---------|-------------|
+        | Mitos | ... |
+        @end_field
+
+# ════════════════════════════════════════════════════════════════════
+# COMPLETE EXAMPLE
+# ════════════════════════════════════════════════════════════════════
+
+complete_example: |
+  # Q013 Stora och lilla kretsloppet
+  ^question Q013
+  ^type match
+  ^identifier BIO_PHY_Q013
+  ^title Stora och lilla kretsloppet
+  ^points 3
+  ^labels #EXAMPLE_COURSE #Cirkulation #Kretslopp #Apply #Medium
+  
+  @field: question_text
+  Matcha varje kretslopp med rätt beskrivning:
+  @end_field
+  
+  @field: pairs
+  | Kretslopp | Beskrivning |
+  |-----------|-------------|
+  | Lilla kretsloppet | Hjärta → lungor → hjärta (syresättning) |
+  | Stora kretsloppet | Hjärta → kroppen → hjärta (syre till vävnader) |
+  | Dubbelt kretslopp | Blodet passerar hjärtat två gånger per varv |
+  @end_field
+  
+  @field: scoring
+  ^Type PartialCredit
+  ^Points_Per_Pair 1
+  ^Total 3
+  @end_field
+  
+  @field: feedback
+  
+  @@field: general_feedback
+  Lilla kretsloppet (lungkretsloppet) går från hjärtats högra kammare 
+  via lungartären till lungorna där blodet syresätts. Stora kretsloppet 
+  (systemkretsloppet) går från vänstra kammaren via aorta ut till 
+  hela kroppen. Ett dubbelt kretslopp innebär att blodet passerar 
+  hjärtat TVÅ gånger per varv.
+  @@end_field
+  
+  @@field: correct_feedback
+  Utmärkt! Du har matchat alla kretslopp korrekt.
+  @@end_field
+  
+  @@field: incorrect_feedback
+  Tänk på skillnaden mellan lilla (till lungorna) och stora 
+  (till kroppen) kretsloppet.
+  @@end_field
+  
+  @@field: partial_feedback
+  Du har några rätt! Granska beskrivningarna noggrant.
+  @@end_field
+  
+  @@field: unanswered_feedback
+  Besvara frågan för att få feedback.
+  @@end_field
+  
+  @end_field
+
+# ════════════════════════════════════════════════════════════════════
+# EXAMPLE WITH DISTRACTORS
+# ════════════════════════════════════════════════════════════════════
+
+example_with_distractors: |
+  # Q023 Vävnadstyper
+  ^question Q023
+  ^type match
+  ^identifier BIO_PHY_Q023
+  ^points 3
+  ^labels #EXAMPLE_COURSE #Rörelse #Apply #Medium
+  
+  @field: question_text
+  Matcha varje vävnadstyp med rätt beskrivning:
+  @end_field
+  
+  @field: pairs
+  | Vävnad | Beskrivning |
+  |--------|-------------|
+  | Bindväv | Förbinder och stödjer olika vävnader |
+  | Benvävnad | Hård vävnad som ger stöd och skydd |
+  | Broskvävnad | Mjukare än ben, ger stötdämpning i leder |
+  @end_field
+  
+  @field: distractors
+  - Täcker kroppens ytor och organ
+  - Transporterar syre i blodet
+  @end_field
+  
+  @field: scoring
+  ^Type PartialCredit
+  ^Points_Per_Pair 1
+  ^Total 3
+  @end_field
+
+# ════════════════════════════════════════════════════════════════════
+# ALTERNATIVE PAIR NOTATION
+# ════════════════════════════════════════════════════════════════════
+
+alternative_notation: |
+  # För enklare fall kan ^pair notation användas:
+  
+  @field: pairs
+  ^pair Mitos :: Celldelning som ger två identiska celler
+  ^pair Meios :: Celldelning som ger könsceller
+  ^pair Cytokinese :: Delning av cytoplasman
+  @end_field
+  
+  # :: används som separator
+  # Varje ^pair är ett matchningspar
+  # Första delen = vänster kolumn
+  # Andra delen = höger kolumn (rätt matchning)

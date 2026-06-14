@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+QTI 2.2 Hotspot Template for Inspera
+Version: 1.0
+Last Updated: October 2025
+
+This template defines the structure for hotspot (click-on-image) questions.
+Students click on specific areas of an image to select their answer.
+Automatically scored with one correct hotspot area.
+
+Key Features:
+- Click on defined areas (hotspots) on a background image
+- Hotspots can be rectangular or circular shapes
+- Visual feedback with shape coloring
+- Canvas height control
+- Single selection (one hotspot choice)
+
+Metadata placeholders:
+- {{IDENTIFIER}}: Unique question identifier (alphanumeric + underscores)
+- {{TITLE}}: Question title for display
+- {{LANGUAGE}}: ISO 639-1 language code (e.g., en, sv, no)
+- {{MAX_SCORE}}: Points for correct answer
+- {{SCORE_WRONG}}: Points for incorrect answer (typically 0 or negative)
+- {{SCORE_UNANSWERED}}: Score for unanswered (typically 0 or -1)
+
+Content placeholders:
+- {{QUESTION_TEXT}}: The question prompt
+- {{PROMPT_TEXT}}: Instruction text shown above image (e.g., "Click on the image")
+- {{BACKGROUND_IMAGE}}: Path to background image file
+- {{IMAGE_LOGICAL_NAME}}: Inspera logical name for image resource
+- {{IMAGE_TITLE}}: Title/description of the image
+- {{CANVAS_HEIGHT}}: Height of the canvas in pixels (e.g., 400, 600)
+- {{HOTSPOTS}}: List of hotspot areas (generated dynamically)
+- {{CORRECT_HOTSPOT_ID}}: Identifier of the correct hotspot
+- {{ENABLE_COLORING}}: true or false - enable visual coloring of shapes
+- {{SHAPE_COLOR}}: Hex color for highlighting (e.g., "#0e98f0")
+- {{SHAPE_OPACITY}}: Opacity for highlights (0.0 to 1.0, e.g., "0.4")
+
+Feedback placeholders:
+- {{FEEDBACK_CORRECT}}: Feedback for correct hotspot
+- {{FEEDBACK_INCORRECT}}: Feedback for incorrect hotspot
+- {{FEEDBACK_UNANSWERED}}: Feedback when not answered
+
+Hotspot format (repeated for each clickable area):
+<hotspotChoice coords="{{COORDS}}" hotspotLabel="1" identifier="{{HOTSPOT_ID}}" matchMax="0" shape="{{SHAPE}}"/>
+
+Where:
+- {{COORDS}}: Coordinates string
+  - For rectangle (shape="rect"): "x1,y1,x2,y2" (top-left and bottom-right corners)
+  - For circle (shape="circle"): "x,y,radius" (center point and radius)
+- {{HOTSPOT_ID}}: Unique identifier for this hotspot
+- {{SHAPE}}: "rect" or "circle"
+-->
+<assessmentItem
+    adaptive="false"
+    identifier="{{IDENTIFIER}}"
+    inspera:objectType="content_question_qti2_hotspot"
+    timeDependent="false"
+    title="{{TITLE}}"
+    xmlns="http://www.imsglobal.org/xsd/imsqti_v2p2"
+    xmlns:inspera="http://www.inspera.no/qti"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.imsglobal.org/xsd/imsqti_v2p2 http://www.imsglobal.org/xsd/qti/qtiv2p2/imsqti_v2p2.xsd">
+
+    <!-- Response Declaration: Single hotspot selection -->
+    <responseDeclaration baseType="identifier" cardinality="single" identifier="RESPONSE">
+        <correctResponse>
+            <value>{{CORRECT_HOTSPOT_ID}}</value>
+        </correctResponse>
+        <mapping defaultValue="{{SCORE_WRONG}}">
+            <mapEntry mapKey="{{CORRECT_HOTSPOT_ID}}" mappedValue="{{MAX_SCORE}}"/>
+        </mapping>
+    </responseDeclaration>
+
+    <!-- Outcome Declaration: Score -->
+    <outcomeDeclaration baseType="float" cardinality="single" identifier="SCORE">
+        <defaultValue>
+            <value>0</value>
+        </defaultValue>
+    </outcomeDeclaration>
+
+    <!-- Outcome Declaration: Feedback identifier -->
+    <outcomeDeclaration baseType="identifier" cardinality="single" identifier="FEEDBACK"/>
+
+    <!-- Template Declarations: Scoring configuration -->
+    <templateDeclaration baseType="float" cardinality="single" identifier="SCORE_EACH_CORRECT">
+        <defaultValue>
+            <value>{{MAX_SCORE}}</value>
+        </defaultValue>
+    </templateDeclaration>
+
+    <templateDeclaration baseType="float" cardinality="single" identifier="SCORE_EACH_WRONG">
+        <defaultValue>
+            <value>{{SCORE_WRONG}}</value>
+        </defaultValue>
+    </templateDeclaration>
+
+    <templateDeclaration baseType="float" cardinality="single" identifier="SCORE_ALL_CORRECT">
+        <defaultValue>
+            <value/>
+        </defaultValue>
+    </templateDeclaration>
+
+    <templateDeclaration baseType="float" cardinality="single" identifier="SCORE_MINIMUM">
+        <defaultValue>
+            <value/>
+        </defaultValue>
+    </templateDeclaration>
+
+    <templateDeclaration baseType="float" cardinality="single" identifier="SCORE_UNANSWERED">
+        <defaultValue>
+            <value>{{SCORE_UNANSWERED}}</value>
+        </defaultValue>
+    </templateDeclaration>
+
+    <!-- Item Body: Question and hotspot interaction -->
+    <itemBody inspera:defaultLanguage="{{LANGUAGE}}" inspera:supportedLanguages="{{LANGUAGE}}">
+        <!-- Optional question illustration area -->
+        <div class="question-main-illustration">
+            {{QUESTION_IMAGES}}
+        </div>
+
+        <!-- Question text -->
+        {{QUESTION_TEXT}}
+
+        <!-- Hotspot Interaction: Click on image -->
+        <hotspotInteraction
+            class="excludeoutofbounds"
+            data-hotspot-coloring-enabled="{{ENABLE_COLORING}}"
+            data-shape-color="{{SHAPE_COLOR}}"
+            data-shape-opacity="{{SHAPE_OPACITY}}"
+            inspera:canvasHeight="{{CANVAS_HEIGHT}}"
+            maxChoices="1"
+            responseIdentifier="RESPONSE">
+
+            <prompt>{{PROMPT_TEXT}}</prompt>
+
+            <!-- Background image -->
+            <object
+                class="background"
+                data="{{BACKGROUND_IMAGE}}"
+                inspera:logicalName="{{IMAGE_LOGICAL_NAME}}"
+                inspera:objectType="content_image"
+                inspera:title="{{IMAGE_TITLE}}"
+                type="image/png"/>
+
+            <!-- Hotspot choices: clickable areas -->
+            {{HOTSPOTS}}
+        </hotspotInteraction>
+    </itemBody>
+
+    <!-- Response Processing: Score calculation and feedback assignment -->
+    <responseProcessing>
+        <!-- Scoring logic: Check if unanswered or map to score -->
+        <responseCondition>
+            <responseIf>
+                <and>
+                    <isNull>
+                        <variable identifier="RESPONSE"/>
+                    </isNull>
+                </and>
+                <setOutcomeValue identifier="SCORE">
+                    <variable identifier="SCORE_UNANSWERED"/>
+                </setOutcomeValue>
+            </responseIf>
+            <responseElse>
+                <setOutcomeValue identifier="SCORE">
+                    <sum>
+                        <variable identifier="SCORE"/>
+                        <mapResponse identifier="RESPONSE"/>
+                    </sum>
+                </setOutcomeValue>
+            </responseElse>
+        </responseCondition>
+
+        <!-- Feedback logic: Determine which feedback to show -->
+        <responseCondition>
+            <!-- Unanswered -->
+            <responseIf>
+                <and>
+                    <isNull>
+                        <variable identifier="RESPONSE"/>
+                    </isNull>
+                </and>
+                <setOutcomeValue identifier="FEEDBACK">
+                    <baseValue baseType="identifier">feedback_unanswered</baseValue>
+                </setOutcomeValue>
+            </responseIf>
+
+            <!-- Correct hotspot -->
+            <responseElseIf>
+                <and>
+                    <member>
+                        <baseValue baseType="identifier">{{CORRECT_HOTSPOT_ID}}</baseValue>
+                        <variable identifier="RESPONSE"/>
+                    </member>
+                </and>
+                <setOutcomeValue identifier="FEEDBACK">
+                    <baseValue baseType="identifier">feedback_correct</baseValue>
+                </setOutcomeValue>
+            </responseElseIf>
+
+            <!-- Incorrect hotspot -->
+            <responseElse>
+                <setOutcomeValue identifier="FEEDBACK">
+                    <baseValue baseType="identifier">feedback_wrong</baseValue>
+                </setOutcomeValue>
+            </responseElse>
+        </responseCondition>
+
+        <!-- Enforce maximum score upper bound -->
+        <responseCondition inspera:type="max_score_upper_bound">
+            <responseIf>
+                <and>
+                    <gte>
+                        <variable identifier="SCORE"/>
+                        <baseValue baseType="float">{{MAX_SCORE}}</baseValue>
+                    </gte>
+                </and>
+                <setOutcomeValue identifier="SCORE">
+                    <baseValue baseType="float">{{MAX_SCORE}}</baseValue>
+                </setOutcomeValue>
+            </responseIf>
+        </responseCondition>
+    </responseProcessing>
+
+    <!-- Modal Feedback: Feedback messages shown to students -->
+    <modalFeedback identifier="feedback_unanswered" outcomeIdentifier="FEEDBACK" showHide="show">
+        <div>{{FEEDBACK_UNANSWERED}}</div>
+    </modalFeedback>
+
+    <modalFeedback identifier="feedback_wrong" outcomeIdentifier="FEEDBACK" showHide="show">
+        <div>{{FEEDBACK_INCORRECT}}</div>
+    </modalFeedback>
+
+    <modalFeedback identifier="feedback_correct" outcomeIdentifier="FEEDBACK" showHide="show">
+        <div>{{FEEDBACK_CORRECT}}</div>
+    </modalFeedback>
+
+    <modalFeedback identifier="feedback_partially_correct" outcomeIdentifier="FEEDBACK" showHide="show">
+        <div>{{FEEDBACK_PARTIALLY_CORRECT}}</div>
+    </modalFeedback>
+
+</assessmentItem>

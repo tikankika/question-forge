@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+QTI 2.2 True/False Template for Inspera
+Version: 1.0
+Created: November 2025
+
+This template defines the structure for a true/false question with two options (True/False).
+Automatically scored. Students select either True or False.
+
+KEY FEATURES:
+- Fixed 2 choices (True/False or Sant/Falskt)
+- shuffle="false" - True/False order MUST NEVER shuffle
+- rId0 = True/Sant (always first)
+- rId1 = False/Falskt (always second)
+
+Metadata placeholders:
+- {{IDENTIFIER}}: Unique question identifier (alphanumeric + underscores)
+- {{TITLE}}: Question title for display
+- {{LANGUAGE}}: ISO 639-1 language code (e.g., en, sv, no)
+- {{MAX_SCORE}}: Maximum points for correct answer (typically 1)
+- {{CORRECT_CHOICE_ID}}: rId0 (for True) or rId1 (for False)
+- {{INCORRECT_CHOICE_ID}}: rId1 (for True answer) or rId0 (for False answer)
+
+Content placeholders:
+- {{QUESTION_TEXT}}: The question prompt (XHTML content)
+- {{TRUE_LABEL}}: Label for True option (e.g., "True" or "Sant")
+- {{FALSE_LABEL}}: Label for False option (e.g., "False" or "Falskt")
+
+Feedback placeholders:
+- {{FEEDBACK_CORRECT}}: Feedback for correct response
+- {{FEEDBACK_INCORRECT}}: Feedback for incorrect response
+- {{FEEDBACK_UNANSWERED}}: Feedback when question is not answered
+
+Choice structure (always 2 choices, never shuffled):
+<simpleChoice identifier="rId0"><p>{{TRUE_LABEL}}</p></simpleChoice>
+<simpleChoice identifier="rId1"><p>{{FALSE_LABEL}}</p></simpleChoice>
+-->
+<assessmentItem
+    adaptive="false"
+    identifier="{{IDENTIFIER}}"
+    inspera:objectType="content_question_qti2_multiple_choice"
+    timeDependent="false"
+    title="{{TITLE}}"
+    xmlns="http://www.imsglobal.org/xsd/imsqti_v2p2"
+    xmlns:inspera="http://www.inspera.no/qti"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.imsglobal.org/xsd/imsqti_v2p2 http://www.imsglobal.org/xsd/qti/qtiv2p2/imsqti_v2p2.xsd">
+
+    <!-- Response Declaration: Defines correct answer and scoring -->
+    <responseDeclaration baseType="identifier" cardinality="single" identifier="RESPONSE">
+        <correctResponse>
+            <value>{{CORRECT_CHOICE_ID}}</value>
+        </correctResponse>
+        <mapping defaultValue="0">
+            <mapEntry mapKey="{{CORRECT_CHOICE_ID}}" mappedValue="{{MAX_SCORE}}"/>
+        </mapping>
+    </responseDeclaration>
+
+    <!-- Outcome Declaration: Score -->
+    <outcomeDeclaration baseType="float" cardinality="single" identifier="SCORE">
+        <defaultValue>
+            <value>0</value>
+        </defaultValue>
+    </outcomeDeclaration>
+
+    <!-- Item Body: Question content and True/False choices -->
+    <itemBody inspera:defaultLanguage="{{LANGUAGE}}" inspera:supportedLanguages="{{LANGUAGE}}">
+        <!-- Question text -->
+        {{QUESTION_TEXT}}
+
+        <!-- True/False interaction: NEVER shuffled -->
+        <choiceInteraction maxChoices="1" responseIdentifier="RESPONSE" shuffle="false">
+            <simpleChoice identifier="rId0"><p>{{TRUE_LABEL}}</p></simpleChoice>
+            <simpleChoice identifier="rId1"><p>{{FALSE_LABEL}}</p></simpleChoice>
+        </choiceInteraction>
+    </itemBody>
+
+    <!-- Outcome Declaration: Feedback identifier -->
+    <outcomeDeclaration baseType="identifier" cardinality="single" identifier="FEEDBACK"/>
+
+    <!-- Outcome Declaration: Correctness indicator -->
+    <outcomeDeclaration baseType="string" cardinality="single" identifier="isCorrect_RESPONSE"/>
+
+    <!-- Template Declarations: Scoring configuration -->
+    <templateDeclaration baseType="float" cardinality="single" identifier="SCORE_EACH_CORRECT">
+        <defaultValue>
+            <value>{{MAX_SCORE}}</value>
+        </defaultValue>
+    </templateDeclaration>
+
+    <templateDeclaration baseType="float" cardinality="single" identifier="SCORE_EACH_WRONG">
+        <defaultValue>
+            <value>0</value>
+        </defaultValue>
+    </templateDeclaration>
+
+    <templateDeclaration baseType="float" cardinality="single" identifier="SCORE_ALL_CORRECT">
+        <defaultValue>
+            <value/>
+        </defaultValue>
+    </templateDeclaration>
+
+    <templateDeclaration baseType="float" cardinality="single" identifier="SCORE_MINIMUM">
+        <defaultValue>
+            <value/>
+        </defaultValue>
+    </templateDeclaration>
+
+    <templateDeclaration baseType="float" cardinality="single" identifier="SCORE_UNANSWERED">
+        <defaultValue>
+            <value>0</value>
+        </defaultValue>
+    </templateDeclaration>
+
+    <!-- Response Processing: Determines score and feedback based on student response -->
+    <responseProcessing>
+        <!-- Scoring logic: Check if unanswered or map to score -->
+        <responseCondition>
+            <responseIf>
+                <and>
+                    <isNull>
+                        <variable identifier="RESPONSE"/>
+                    </isNull>
+                </and>
+                <setOutcomeValue identifier="SCORE">
+                    <variable identifier="SCORE_UNANSWERED"/>
+                </setOutcomeValue>
+            </responseIf>
+            <responseElse>
+                <setOutcomeValue identifier="SCORE">
+                    <sum>
+                        <variable identifier="SCORE"/>
+                        <mapResponse identifier="RESPONSE"/>
+                    </sum>
+                </setOutcomeValue>
+            </responseElse>
+        </responseCondition>
+
+        <!-- Feedback logic: Determine which feedback to show -->
+        <responseCondition>
+            <!-- Unanswered -->
+            <responseIf>
+                <and>
+                    <isNull>
+                        <variable identifier="RESPONSE"/>
+                    </isNull>
+                </and>
+                <setOutcomeValue identifier="FEEDBACK">
+                    <baseValue baseType="identifier">feedback_unanswered</baseValue>
+                </setOutcomeValue>
+            </responseIf>
+
+            <!-- Correct response -->
+            <responseElseIf>
+                <and>
+                    <member>
+                        <baseValue baseType="identifier">{{CORRECT_CHOICE_ID}}</baseValue>
+                        <variable identifier="RESPONSE"/>
+                    </member>
+                    <not>
+                        <member>
+                            <baseValue baseType="identifier">{{INCORRECT_CHOICE_ID}}</baseValue>
+                            <variable identifier="RESPONSE"/>
+                        </member>
+                    </not>
+                </and>
+                <setOutcomeValue identifier="FEEDBACK">
+                    <baseValue baseType="identifier">feedback_correct</baseValue>
+                </setOutcomeValue>
+            </responseElseIf>
+
+            <!-- Incorrect response -->
+            <responseElse>
+                <setOutcomeValue identifier="FEEDBACK">
+                    <baseValue baseType="identifier">feedback_wrong</baseValue>
+                </setOutcomeValue>
+            </responseElse>
+        </responseCondition>
+
+        <!-- Enforce maximum score upper bound -->
+        <responseCondition inspera:type="max_score_upper_bound">
+            <responseIf>
+                <and>
+                    <gte>
+                        <variable identifier="SCORE"/>
+                        <baseValue baseType="float">{{MAX_SCORE}}</baseValue>
+                    </gte>
+                </and>
+                <setOutcomeValue identifier="SCORE">
+                    <baseValue baseType="float">{{MAX_SCORE}}</baseValue>
+                </setOutcomeValue>
+            </responseIf>
+        </responseCondition>
+    </responseProcessing>
+
+    <!-- Modal Feedback: Feedback messages shown to students -->
+    <modalFeedback identifier="feedback_unanswered" outcomeIdentifier="FEEDBACK" showHide="show"><div>{{FEEDBACK_UNANSWERED}}</div></modalFeedback>
+    <modalFeedback identifier="feedback_wrong" outcomeIdentifier="FEEDBACK" showHide="show"><div>{{FEEDBACK_INCORRECT}}</div></modalFeedback>
+    <modalFeedback identifier="feedback_correct" outcomeIdentifier="FEEDBACK" showHide="show"><div>{{FEEDBACK_CORRECT}}</div></modalFeedback>
+
+</assessmentItem>

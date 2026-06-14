@@ -1,0 +1,340 @@
+# TYPE REQUIREMENT: inline_choice
+# Dropdown-fråga (välj från lista i löpande text)
+# Version: 1.0
+# Inspera type: inlineChoiceInteraction
+
+name: "Dropdown / Inline Choice"
+name_en: "Inline Choice / Dropdown"
+code: "inline_choice"
+inspera_type: "inlineChoiceInteraction"
+description: |
+  Fråga där studenten väljer svar från dropdown-menyer i löpande text.
+  Bra för att testa förståelse av processer, sekvenser, eller 
+  relationer mellan begrepp.
+  Varje dropdown kan ha delpoäng (partial credit).
+
+# ════════════════════════════════════════════════════════════════════
+# REQUIRED METADATA
+# ════════════════════════════════════════════════════════════════════
+
+required_metadata:
+  - field: "^question"
+    pattern: "Q\\d{3}[A-Z]?"
+    required: true
+    
+  - field: "^type"
+    value: "inline_choice"
+    required: true
+    
+  - field: "^identifier"
+    pattern: "[A-Z][A-Z0-9_]*"
+    required: true
+    
+  - field: "^points"
+    type: "integer"
+    notes: "Ofta 1 poäng per dropdown"
+    required: true
+    
+  - field: "^labels"
+    must_contain_bloom: true
+    must_contain_difficulty: true
+    required: true
+
+# ════════════════════════════════════════════════════════════════════
+# REQUIRED FIELDS
+# ════════════════════════════════════════════════════════════════════
+
+required_fields:
+
+  - name: "question_text"
+    description: "Frågetext med dropdown-placeholders"
+    required: true
+    constraints:
+      must_contain: "{{dropdown_N}}"
+      placeholder_format: "{{dropdown_1}}, {{dropdown_2}}, etc."
+    format: |
+      @field: question_text
+      Galla produceras i {{dropdown_1}} och lagras i {{dropdown_2}}.
+      @end_field
+    notes:
+      - "Använd {{dropdown_1}}, {{dropdown_2}} etc."
+      - "INTE {{DROPDOWN-1}} (gammal syntax)"
+
+  - name: "dropdown_N"
+    description: "Definition av varje dropdown (en per placeholder)"
+    required: true
+    required_per_dropdown: true
+    format: |
+      @field: dropdown_1
+      ^Options
+      - levern
+      - bukspottkörteln
+      - gallblåsan
+      - magsäcken
+      ^Correct levern
+      @end_field
+    constraints:
+      min_options: 3
+      max_options: 6
+      must_have_correct: true
+    notes:
+      - "Lista alla alternativ under ^Options"
+      - "Ange rätt svar med ^Correct"
+      - "Alternativen bör vara grammatiskt utbytbara i meningen"
+
+  - name: "feedback"
+    description: "Feedback"
+    required: true
+    subfields:
+      - name: "general_feedback"
+        required: true
+      - name: "correct_feedback"
+        required: true
+      - name: "incorrect_feedback"
+        required: true
+      - name: "partial_feedback"
+        required: true
+        description: "För när några men inte alla dropdowns är rätt"
+      - name: "unanswered_feedback"
+        required: true
+
+# ════════════════════════════════════════════════════════════════════
+# OPTIONAL FIELDS
+# ════════════════════════════════════════════════════════════════════
+
+optional_fields:
+
+  - name: "scoring"
+    description: "Poängberäkning"
+    format: |
+      @field: scoring
+      ^Type PartialCredit
+      ^Points_Per_Dropdown 1
+      ^Total 2
+      @end_field
+
+  - name: "shuffle"
+    description: "Blanda alternativ i dropdowns"
+    format: |
+      ^shuffle Yes
+
+# ════════════════════════════════════════════════════════════════════
+# COMMON ISSUES
+# ════════════════════════════════════════════════════════════════════
+
+common_issues:
+
+  - id: "old_dropdown_syntax"
+    severity: "critical"
+    detect: "{{DROPDOWN-\\d+}}"
+    message: "Gammal syntax {{DROPDOWN-1}}, ska vara {{dropdown_1}}"
+    auto_fix: true
+    transform:
+      "{{DROPDOWN-1}}": "{{dropdown_1}}"
+      "{{DROPDOWN-2}}": "{{dropdown_2}}"
+      "{{DROPDOWN-3}}": "{{dropdown_3}}"
+
+  - id: "dropdown_mismatch"
+    severity: "critical"
+    detect: "antal {{dropdown_N}} != antal @field: dropdown_N"
+    message: "Antalet dropdowns i texten matchar inte definitionerna"
+    ask_user: "Kontrollera att varje dropdown har en matchande definition"
+
+  - id: "missing_correct"
+    severity: "critical"
+    detect: "^Correct saknas i dropdown-definition"
+    message: "Dropdown saknar ^Correct (rätt svar)"
+    ask_user: "Vilket är rätt svar för denna dropdown?"
+
+  - id: "correct_not_in_options"
+    severity: "critical"
+    detect: "^Correct värde finns inte i ^Options"
+    message: "Rätt svar '{X}' finns inte bland alternativen"
+    ask_user: "Lägg till rätt svar i alternativen eller ändra ^Correct"
+
+  - id: "too_few_options"
+    severity: "warning"
+    detect: "färre än 3 alternativ i dropdown"
+    message: "Endast {N} alternativ - rekommenderat minimum är 3"
+    ask_user: "Lägg till fler distraktorer?"
+
+  - id: "grammatical_mismatch"
+    severity: "info"
+    detect: "manuell kontroll"
+    message: "Kontrollera att alla alternativ passar grammatiskt i meningen"
+    notes: |
+      Exempel på problem:
+      "Maten bryts ner i {{dropdown_1}}" 
+      Alternativ: "magsäcken", "munnen", "tarm" ← "tarm" passar inte (borde vara "tarmen")
+
+  - id: "old_field_format"
+    severity: "critical"
+    detect: "## Dropdown \\d eller @field: dropdown_\\d utan ^Options"
+    message: "Gammal dropdown-format"
+    transform_example:
+      old: |
+        ## Dropdown 1
+        **Options:**
+        - levern
+        - gallblåsan
+        **Correct Answer:** levern
+      new: |
+        @field: dropdown_1
+        ^Options
+        - levern
+        - gallblåsan
+        ^Correct levern
+        @end_field
+
+  - id: "missing_partial_feedback"
+    severity: "warning"
+    detect: "partial_feedback saknas och fler än 1 dropdown"
+    message: "Saknar partial_feedback för fråga med flera dropdowns"
+    suggest_content: true
+    default: "Du har några rätt! Kontrollera dina svar igen."
+
+# ════════════════════════════════════════════════════════════════════
+# COMPLETE EXAMPLE
+# ════════════════════════════════════════════════════════════════════
+
+complete_example: |
+  # Q002 Var produceras och lagras galla
+  ^question Q002
+  ^type inline_choice
+  ^identifier BIO_PHY_Q002
+  ^title Var produceras och lagras galla
+  ^points 2
+  ^labels #EXAMPLE_COURSE #Matsmältning #Galla #Understand #Easy
+  
+  @field: question_text
+  Galla produceras i {{dropdown_1}} och lagras i {{dropdown_2}}.
+  @end_field
+  
+  @field: dropdown_1
+  ^Options
+  - levern
+  - bukspottkörteln
+  - gallblåsan
+  - magsäcken
+  ^Correct levern
+  @end_field
+  
+  @field: dropdown_2
+  ^Options
+  - gallblåsan
+  - levern
+  - bukspottkörteln
+  - tunntarmen
+  ^Correct gallblåsan
+  @end_field
+  
+  @field: scoring
+  ^Type PartialCredit
+  ^Points_Per_Dropdown 1
+  ^Total 2
+  @end_field
+  
+  @field: feedback
+  
+  @@field: general_feedback
+  Galla produceras i LEVERN och lagras i GALLBLÅSAN tills den behövs. 
+  När vi äter fettrik mat frigörs galla från gallblåsan till 
+  tolvfingertarmen där den emulgerar fetter.
+  @@end_field
+  
+  @@field: correct_feedback
+  Rätt! Galla produceras i levern och lagras i gallblåsan.
+  @@end_field
+  
+  @@field: incorrect_feedback
+  Tänk på att galla produceras av ett organ men lagras i ett annat.
+  @@end_field
+  
+  @@field: partial_feedback
+  Du har en rätt! Kontrollera det andra svaret.
+  @@end_field
+  
+  @@field: unanswered_feedback
+  Besvara frågan för att få feedback.
+  @@end_field
+  
+  @end_field
+
+# ════════════════════════════════════════════════════════════════════
+# COMPLEX EXAMPLE (Many dropdowns)
+# ════════════════════════════════════════════════════════════════════
+
+complex_example: |
+  # Q021 Urinbildningens process
+  ^question Q021
+  ^type inline_choice
+  ^identifier BIO_PHY_Q021
+  ^points 6
+  ^labels #EXAMPLE_COURSE #Utsöndring #Apply #Hard
+  
+  @field: question_text
+  Urinbildningen sker i {{dropdown_1}}. Först bildas {{dropdown_2}} 
+  genom filtrering, cirka {{dropdown_3}} liter per dag. Sedan 
+  {{dropdown_4}} vatten och näringsämnen, och det som blir kvar 
+  är {{dropdown_5}}, cirka {{dropdown_6}} liter per dag.
+  @end_field
+  
+  @field: dropdown_1
+  ^Options
+  - nefronet
+  - urinblåsan
+  - njurbäckenet
+  - njurbarken
+  ^Correct nefronet
+  @end_field
+  
+  @field: dropdown_2
+  ^Options
+  - primärurin
+  - sekundärurin
+  - blodplasma
+  - urea
+  ^Correct primärurin
+  @end_field
+  
+  @field: dropdown_3
+  ^Options
+  - 180
+  - 18
+  - 2
+  - 1800
+  ^Correct 180
+  @end_field
+  
+  @field: dropdown_4
+  ^Options
+  - reabsorberas
+  - filtreras
+  - utsöndras
+  - produceras
+  ^Correct reabsorberas
+  @end_field
+  
+  @field: dropdown_5
+  ^Options
+  - sekundärurin
+  - primärurin
+  - blodplasma
+  - vävnadsvätska
+  ^Correct sekundärurin
+  @end_field
+  
+  @field: dropdown_6
+  ^Options
+  - 0.5-2
+  - 18
+  - 180
+  - 200
+  ^Correct 0.5-2
+  @end_field
+  
+  @field: scoring
+  ^Type PartialCredit
+  ^Points_Per_Dropdown 1
+  ^Total 6
+  @end_field

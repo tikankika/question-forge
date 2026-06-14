@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-python:
+    name: Python Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install qf-pipeline dependencies
+        working-directory: packages/qf-pipeline
+        run: uv sync --dev
+
+      - name: Run qf-pipeline tests with coverage
+        working-directory: packages/qf-pipeline
+        run: uv run python -m pytest tests/ -v --tb=short --cov --cov-report=term-missing
+
+      - name: Run qti-core tests
+        working-directory: packages/qti-core
+        run: ../qf-pipeline/.venv/bin/python -m pytest tests/ -v --tb=short
+
+  test-typescript:
+    name: TypeScript Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        working-directory: packages/qf-scaffolding
+        run: npm ci
+
+      - name: Type check
+        working-directory: packages/qf-scaffolding
+        run: npx tsc --noEmit
+
+      - name: Run tests
+        working-directory: packages/qf-scaffolding
+        run: npx vitest run

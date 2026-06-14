@@ -1,0 +1,33 @@
+{
+  "folders": [
+    {
+      "name": "Biology EXAMPLE_COURSE (Autumn 2025)",
+      "path": "~/Documents/Courses/Biology/EXAMPLE_COURSE_2025/Exams/MQG_folders",
+      "default_language": "sv",
+      "description": "Biology questions for EXAMPLE_COURSE autumn 2025"
+    },
+    {
+      "name": "COURSE101 LP2 2025",
+      "path": "~/Documents/Courses/COURSE101/MQG_folders_lp2_2025",
+      "default_language": "sv",
+      "description": "COURSE101 questions period 2 2025"
+    },
+    {
+      "name": "MATH201 Autumn 2025",
+      "path": "/path/to/configure",
+      "default_language": "sv"
+    },
+    {
+      "name": "BIO101 Cell Biology",
+      "path": "/path/to/configure",
+      "default_language": "sv"
+    },
+    {
+      "name": "BIO101 Physiology",
+      "path": "/path/to/configure",
+      "default_language": "sv"
+    }
+  ],
+  "default_output_dir": "/path/to/configure",
+  "remember_last_selection": true
+}

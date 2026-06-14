@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+QTI 2.2 Composite Editor Template for Inspera
+Version: 1.0
+Last Updated: October 2025
+
+Template for composite questions combining multiple interaction types in one item.
+Students answer multiple sub-questions of different types (text entry, multiple choice, etc.).
+Automatically scored with partial credit support.
+
+Key Features:
+- Mix of interaction types (textEntry, choice, inlineChoice, etc.)
+- Individual scoring per sub-question
+- Aggregate feedback (all correct, partial, wrong)
+- Per-response correctness tracking
+- Complex response processing combining string matching and mapping
+
+Metadata placeholders:
+- {{IDENTIFIER}}, {{TITLE}}, {{LANGUAGE}}
+- {{POINTS_EACH_CORRECT}}, {{POINTS_EACH_WRONG}}
+- {{POINTS_ALL_CORRECT}}, {{POINTS_MINIMUM}}, {{POINTS_UNANSWERED}}
+- {{MAX_SCORE}}: Maximum total score
+
+Content placeholders:
+- {{QUESTION_IMAGES}}: Optional images in main illustration div
+- {{QUESTION_TEXT}}: Question prompt and instructions
+- {{NUM_RESPONSES}}: Total number of sub-questions
+- {{RESPONSE_DECLARATIONS}}: Generated response declarations for each sub-question
+- {{OUTCOME_DECLARATIONS}}: Generated isCorrect outcome declarations
+- {{INTERACTIONS}}: Generated HTML with embedded interactions
+- {{INDIVIDUAL_SCORING}}: Per-response scoring logic
+- {{UNANSWERED_CHECKS}}: Null checks for all responses
+- {{CHOICE_MAP_RESPONSES}}: mapResponse calls for choice interactions
+- {{ALL_CORRECT_CHECKS}}: Correctness checks for all responses
+- {{ANY_CORRECT_CHECKS}}: Correctness checks for at least one response
+
+Response Processing Pattern:
+1. Score each response individually (text: stringMatch, choice: mapped later)
+2. Check if all unanswered → SCORE_UNANSWERED
+3. Add choice interaction scores via mapResponse
+4. Determine feedback based on correctness
+5. Enforce max score upper bound
+
+Example Response Declaration Patterns:
+- Text Entry:
+  <responseDeclaration baseType="string" cardinality="single" identifier="RESPONSE-N">
+      <correctResponse><value>answer</value></correctResponse>
+  </responseDeclaration>
+
+- Multiple Choice (Single):
+  <responseDeclaration baseType="identifier" cardinality="single" identifier="RESPONSE-N">
+      <correctResponse><value>choice_id</value></correctResponse>
+      <mapping defaultValue="0">
+          <mapEntry mapKey="choice_id" mappedValue="1"/>
+      </mapping>
+  </responseDeclaration>
+
+- Multiple Response:
+  <responseDeclaration baseType="identifier" cardinality="multiple" identifier="RESPONSE-N">
+      <correctResponse>
+          <value>choice_id_1</value>
+          <value>choice_id_2</value>
+      </correctResponse>
+      <mapping defaultValue="0">
+          <mapEntry mapKey="choice_id_1" mappedValue="1"/>
+          <mapEntry mapKey="choice_id_2" mappedValue="1"/>
+      </mapping>
+  </responseDeclaration>
+-->
+<assessmentItem
+    adaptive="false"
+    identifier="{{IDENTIFIER}}"
+    inspera:objectType="content_question_qti2_composite_editor"
+    timeDependent="false"
+    title="{{TITLE}}"
+    xmlns="http://www.imsglobal.org/xsd/imsqti_v2p2"
+    xmlns:inspera="http://www.inspera.no/qti"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.imsglobal.org/xsd/imsqti_v2p2 http://www.imsglobal.org/xsd/qti/qtiv2p2/imsqti_v2p2.xsd">
+
+    <!-- Response Declarations: One per sub-question (RESPONSE-1, RESPONSE-2, etc.) -->
+    {{RESPONSE_DECLARATIONS}}
+
+    <outcomeDeclaration baseType="float" cardinality="single" identifier="SCORE">
+        <defaultValue><value>0</value></defaultValue>
+    </outcomeDeclaration>
+    <outcomeDeclaration baseType="identifier" cardinality="single" identifier="FEEDBACK"/>
+
+    <!-- Per-response correctness tracking (only for text entry responses) -->
+    {{OUTCOME_DECLARATIONS}}
+
+    <templateDeclaration baseType="float" cardinality="single" identifier="SCORE_EACH_CORRECT">
+        <defaultValue><value>{{POINTS_EACH_CORRECT}}</value></defaultValue>
+    </templateDeclaration>
+    <templateDeclaration baseType="float" cardinality="single" identifier="SCORE_EACH_WRONG">
+        <defaultValue><value>{{POINTS_EACH_WRONG}}</value></defaultValue>
+    </templateDeclaration>
+    <templateDeclaration baseType="float" cardinality="single" identifier="SCORE_ALL_CORRECT">
+        <defaultValue><value>{{POINTS_ALL_CORRECT}}</value></defaultValue>
+    </templateDeclaration>
+    <templateDeclaration baseType="float" cardinality="single" identifier="SCORE_MINIMUM">
+        <defaultValue><value>{{POINTS_MINIMUM}}</value></defaultValue>
+    </templateDeclaration>
+    <templateDeclaration baseType="float" cardinality="single" identifier="SCORE_UNANSWERED">
+        <defaultValue><value>{{POINTS_UNANSWERED}}</value></defaultValue>
+    </templateDeclaration>
+
+    <itemBody inspera:defaultLanguage="{{LANGUAGE}}" inspera:supportedLanguages="{{LANGUAGE}}">
+        <div class="question-main-illustration">{{QUESTION_IMAGES}}</div>
+
+        {{QUESTION_TEXT}}
+
+        <!-- Mixed interactions embedded in content -->
+        {{INTERACTIONS}}
+    </itemBody>
+
+    <responseProcessing>
+        <!-- Individual scoring for each text entry response -->
+        {{INDIVIDUAL_SCORING}}
+
+        <!-- Aggregate scoring with unanswered check -->
+        <responseCondition>
+            <responseIf>
+                <and>{{UNANSWERED_CHECKS}}</and>
+                <setOutcomeValue identifier="SCORE">
+                    <variable identifier="SCORE_UNANSWERED"/>
+                </setOutcomeValue>
+            </responseIf>
+            <responseElse>
+                <setOutcomeValue identifier="SCORE">
+                    <sum>
+                        <variable identifier="SCORE"/>
+                        {{CHOICE_MAP_RESPONSES}}
+                    </sum>
+                </setOutcomeValue>
+            </responseElse>
+        </responseCondition>
+
+        <!-- Feedback determination -->
+        <responseCondition>
+            <responseIf>
+                <and>{{UNANSWERED_CHECKS}}</and>
+                <setOutcomeValue identifier="FEEDBACK">
+                    <baseValue baseType="identifier">feedback_unanswered</baseValue>
+                </setOutcomeValue>
+            </responseIf>
+            <responseElseIf>
+                <and>{{ALL_CORRECT_CHECKS}}</and>
+                <setOutcomeValue identifier="FEEDBACK">
+                    <baseValue baseType="identifier">feedback_correct</baseValue>
+                </setOutcomeValue>
+            </responseElseIf>
+            <responseElseIf>
+                <or>{{ANY_CORRECT_CHECKS}}</or>
+                <setOutcomeValue identifier="FEEDBACK">
+                    <baseValue baseType="identifier">feedback_partially_correct</baseValue>
+                </setOutcomeValue>
+            </responseElseIf>
+            <responseElse>
+                <setOutcomeValue identifier="FEEDBACK">
+                    <baseValue baseType="identifier">feedback_wrong</baseValue>
+                </setOutcomeValue>
+            </responseElse>
+        </responseCondition>
+
+        <!-- Max score upper bound -->
+        <responseCondition inspera:type="max_score_upper_bound">
+            <responseIf>
+                <and><gte><variable identifier="SCORE"/><baseValue baseType="float">{{MAX_SCORE}}</baseValue></gte></and>
+                <setOutcomeValue identifier="SCORE"><baseValue baseType="float">{{MAX_SCORE}}</baseValue></setOutcomeValue>
+            </responseIf>
+        </responseCondition>
+    </responseProcessing>
+
+    <modalFeedback identifier="feedback_unanswered" outcomeIdentifier="FEEDBACK" showHide="show"><div>{{FEEDBACK_UNANSWERED}}</div></modalFeedback>
+    <modalFeedback identifier="feedback_wrong" outcomeIdentifier="FEEDBACK" showHide="show"><div>{{FEEDBACK_INCORRECT}}</div></modalFeedback>
+    <modalFeedback identifier="feedback_correct" outcomeIdentifier="FEEDBACK" showHide="show"><div>{{FEEDBACK_CORRECT}}</div></modalFeedback>
+    <modalFeedback identifier="feedback_partially_correct" outcomeIdentifier="FEEDBACK" showHide="show"><div>{{FEEDBACK_PARTIALLY_CORRECT}}</div></modalFeedback>
+
+</assessmentItem>

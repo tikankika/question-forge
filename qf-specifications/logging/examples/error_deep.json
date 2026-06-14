@@ -1,0 +1,36 @@
+{
+  "ts": "2026-01-16T23:05:00.789Z",
+  "v": 1,
+  "session_id": "abc12345-6789-def0-1234-567890abcdef",
+  "mcp": "qf-pipeline",
+  "tool": "step2_validate",
+  "event": "tool_error",
+  "level": "error",
+  "data": {
+    "error_type": "ValidationError",
+    "error_message": "Invalid question format at line 45",
+    "stacktrace": "Traceback (most recent call last):\n  File \"validator.py\", line 123, in validate_question\n    raise ValidationError(msg)\nValidationError: Invalid question format at line 45",
+    "input_context": {
+      "file": "/Users/username/project/02_working/questions.md",
+      "line_number": 45,
+      "line_content": "## Fråga 5",
+      "surrounding_lines": [
+        "43: ",
+        "44: ## Fråga 5",
+        "45: Typ: multiple_choce",
+        "46: "
+      ]
+    },
+    "system_state": {
+      "questions_processed": 4,
+      "current_question_id": "Q5",
+      "validation_mode": "strict"
+    },
+    "environment": {
+      "python_version": "3.12.0",
+      "qf_pipeline_version": "0.1.0",
+      "os": "darwin"
+    }
+  },
+  "duration_ms": 1250
+}

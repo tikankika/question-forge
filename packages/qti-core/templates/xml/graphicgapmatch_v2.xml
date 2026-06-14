@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+QTI 2.2 Graphic Gap Match v2 Template for Inspera
+Version: 1.0
+Last Updated: October 2025
+
+Template for graphic gap match (drag onto image hotspots) questions.
+Students drag text/images onto defined hotspot areas on a background image.
+Automatically scored using directed pair mapping.
+
+Key Features:
+- Drag text onto hotspots on background image
+- Hotspots defined as rect or circle shapes
+- Same gap size control
+- Token positioning and sizing
+- Reusable alternatives
+
+Metadata placeholders:
+- {{IDENTIFIER}}, {{TITLE}}, {{LANGUAGE}}
+- {{POINTS_EACH_CORRECT}}, {{POINTS_EACH_WRONG}}
+- {{POINTS_ALL_CORRECT}}, {{POINTS_MINIMUM}}, {{POINTS_UNANSWERED}}
+
+Content placeholders:
+- {{QUESTION_TEXT}}: Question prompt
+- {{PROMPT_TEXT}}: Instruction text
+- {{BACKGROUND_IMAGE}}: Path to background image
+- {{IMAGE_LOGICAL_NAME}}, {{IMAGE_TITLE}}
+- {{REUSE_ALTERNATIVES}}: true or false
+- {{GAP_SIZE}}: sameSize or variable
+- {{TOKEN_ORDER}}: random or fixed
+- {{TOKEN_POSITION}}: top, bottom, left, right
+- {{TOKEN_SIZE}}: autoSize or fixedSize
+- {{TYPE}}: plainText or richText
+- {{GAP_TEXTS}}: List of draggable text items
+- {{HOTSPOTS}}: List of associable hotspots with coords
+- {{CORRECT_PAIRS}}: List of correct text-to-hotspot pairings
+- {{MAPPING_ENTRIES}}: Score mappings
+-->
+<assessmentItem
+    adaptive="false"
+    identifier="{{IDENTIFIER}}"
+    inspera:objectType="content_question_qti2_graphicgapmatch_v2"
+    timeDependent="false"
+    title="{{TITLE}}"
+    xmlns="http://www.imsglobal.org/xsd/imsqti_v2p2"
+    xmlns:inspera="http://www.inspera.no/qti"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.imsglobal.org/xsd/imsqti_v2p2 http://www.imsglobal.org/xsd/qti/qtiv2p2/imsqti_v2p2.xsd">
+
+    <responseDeclaration baseType="directedPair" cardinality="multiple" identifier="RESPONSE">
+        <correctResponse>{{CORRECT_PAIRS}}</correctResponse>
+        <mapping defaultValue="{{POINTS_EACH_WRONG}}">{{MAPPING_ENTRIES}}</mapping>
+    </responseDeclaration>
+
+    <outcomeDeclaration baseType="float" cardinality="single" identifier="SCORE">
+        <defaultValue><value>0</value></defaultValue>
+    </outcomeDeclaration>
+    <outcomeDeclaration baseType="identifier" cardinality="single" identifier="FEEDBACK"/>
+
+    <templateDeclaration baseType="float" cardinality="single" identifier="SCORE_EACH_CORRECT">
+        <defaultValue><value>{{POINTS_EACH_CORRECT}}</value></defaultValue>
+    </templateDeclaration>
+    <templateDeclaration baseType="float" cardinality="single" identifier="SCORE_EACH_WRONG">
+        <defaultValue><value>{{POINTS_EACH_WRONG}}</value></defaultValue>
+    </templateDeclaration>
+    <templateDeclaration baseType="float" cardinality="single" identifier="SCORE_ALL_CORRECT">
+        <defaultValue><value>{{POINTS_ALL_CORRECT}}</value></defaultValue>
+    </templateDeclaration>
+    <templateDeclaration baseType="float" cardinality="single" identifier="SCORE_MINIMUM">
+        <defaultValue><value>{{POINTS_MINIMUM}}</value></defaultValue>
+    </templateDeclaration>
+    <templateDeclaration baseType="float" cardinality="single" identifier="SCORE_UNANSWERED">
+        <defaultValue><value>{{POINTS_UNANSWERED}}</value></defaultValue>
+    </templateDeclaration>
+
+    <itemBody inspera:defaultLanguage="{{LANGUAGE}}" inspera:supportedLanguages="{{LANGUAGE}}">
+        <div class="question-main-illustration">{{QUESTION_IMAGES}}</div>
+
+        {{QUESTION_TEXT}}
+
+        <graphicGapMatchInteraction
+            inspera:reuseAlternatives="{{REUSE_ALTERNATIVES}}"
+            inspera:gapSize="{{GAP_SIZE}}"
+            inspera:tokenOrder="{{TOKEN_ORDER}}"
+            inspera:tokenPosition="{{TOKEN_POSITION}}"
+            inspera:tokenSize="{{TOKEN_SIZE}}"
+            inspera:type="{{TYPE}}"
+            responseIdentifier="RESPONSE">
+
+            <prompt>{{PROMPT_TEXT}}</prompt>
+
+            <!-- Draggable text items -->
+            {{GAP_TEXTS}}
+
+            <!-- Background image -->
+            <object class="background" data="{{BACKGROUND_IMAGE}}" inspera:logicalName="{{IMAGE_LOGICAL_NAME}}" inspera:objectType="content_image" inspera:title="{{IMAGE_TITLE}}" type="image/png"/>
+
+            <!-- Hotspot areas -->
+            {{HOTSPOTS}}
+        </graphicGapMatchInteraction>
+    </itemBody>
+
+    <responseProcessing>
+        <responseCondition>
+            <responseIf>
+                <and><isNull><variable identifier="RESPONSE"/></isNull></and>
+                <setOutcomeValue identifier="SCORE"><variable identifier="SCORE_UNANSWERED"/></setOutcomeValue>
+            </responseIf>
+            <responseElse>
+                <setOutcomeValue identifier="SCORE"><sum><variable identifier="SCORE"/><mapResponse identifier="RESPONSE"/></sum></setOutcomeValue>
+            </responseElse>
+        </responseCondition>
+
+        <responseCondition>
+            <responseIf>
+                <and><isNull><variable identifier="RESPONSE"/></isNull></and>
+                <setOutcomeValue identifier="FEEDBACK"><baseValue baseType="identifier">feedback_unanswered</baseValue></setOutcomeValue>
+            </responseIf>
+            <responseElseIf>
+                <and>{{CORRECT_PAIR_CHECKS}}</and>
+                <setOutcomeValue identifier="FEEDBACK"><baseValue baseType="identifier">feedback_correct</baseValue></setOutcomeValue>
+                <setOutcomeValue identifier="SCORE"><variable identifier="SCORE_ALL_CORRECT"/></setOutcomeValue>
+            </responseElseIf>
+            <responseElseIf>
+                <or>{{ANY_CORRECT_PAIR_CHECKS}}</or>
+                <setOutcomeValue identifier="FEEDBACK"><baseValue baseType="identifier">feedback_partially_correct</baseValue></setOutcomeValue>
+            </responseElseIf>
+            <responseElse>
+                <setOutcomeValue identifier="FEEDBACK"><baseValue baseType="identifier">feedback_wrong</baseValue></setOutcomeValue>
+            </responseElse>
+        </responseCondition>
+
+        <responseCondition inspera:type="max_score_upper_bound">
+            <responseIf>
+                <and><gte><variable identifier="SCORE"/><baseValue baseType="float">{{POINTS_ALL_CORRECT}}</baseValue></gte></and>
+                <setOutcomeValue identifier="SCORE"><baseValue baseType="float">{{POINTS_ALL_CORRECT}}</baseValue></setOutcomeValue>
+            </responseIf>
+        </responseCondition>
+    </responseProcessing>
+
+    <modalFeedback identifier="feedback_unanswered" outcomeIdentifier="FEEDBACK" showHide="show"><div>{{FEEDBACK_UNANSWERED}}</div></modalFeedback>
+    <modalFeedback identifier="feedback_wrong" outcomeIdentifier="FEEDBACK" showHide="show"><div>{{FEEDBACK_INCORRECT}}</div></modalFeedback>
+    <modalFeedback identifier="feedback_correct" outcomeIdentifier="FEEDBACK" showHide="show"><div>{{FEEDBACK_CORRECT}}</div></modalFeedback>
+    <modalFeedback identifier="feedback_partially_correct" outcomeIdentifier="FEEDBACK" showHide="show"><div>{{FEEDBACK_PARTIALLY_CORRECT}}</div></modalFeedback>
+
+</assessmentItem>

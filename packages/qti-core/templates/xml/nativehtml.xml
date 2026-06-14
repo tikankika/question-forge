@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+QTI 2.2 Native HTML Template for Inspera
+Version: 1.0
+Last Updated: October 2025
+
+Template for informational content pages with no student interaction.
+Used for test instructions, section breaks, explanatory content, etc.
+
+Key Features:
+- No scoring or interaction elements
+- Pure HTML content display
+- Language attribute support
+- Supports rich text formatting, images, links
+
+Metadata placeholders:
+- {{IDENTIFIER}}, {{TITLE}}
+- {{LANGUAGE}}: ISO language code (e.g., en, sv_se, no_nb)
+
+Content placeholders:
+- {{QUESTION_IMAGES}}: Optional images in main illustration div
+- {{HTML_CONTENT}}: The informational HTML content to display
+-->
+<assessmentItem
+    adaptive="false"
+    identifier="{{IDENTIFIER}}"
+    inspera:objectType="content_nativehtml"
+    timeDependent="false"
+    title="{{TITLE}}"
+    xmlns="http://www.imsglobal.org/xsd/imsqti_v2p2"
+    xmlns:inspera="http://www.inspera.no/qti"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.imsglobal.org/xsd/imsqti_v2p2 http://www.imsglobal.org/xsd/qti/qtiv2p2/imsqti_v2p2.xsd">
+
+    <itemBody>
+        <div data-defaultlanguage="{{LANGUAGE}}" data-supportedlanguages="{{LANGUAGE}}">
+            <div class="question-main-illustration">{{QUESTION_IMAGES}}</div>
+            {{HTML_CONTENT}}
+        </div>
+    </itemBody>
+
+</assessmentItem>
