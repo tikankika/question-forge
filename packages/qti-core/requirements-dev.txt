@@ -17,4 +17,4 @@ types-PyYAML
 
 # Package Build Tools (optional)
 build>=0.10.0
-twine>=4.0.0
+twine>=6.2.0
