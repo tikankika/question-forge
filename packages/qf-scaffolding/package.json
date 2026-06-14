@@ -13,7 +13,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.4",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "js-yaml": "^4.1.1",
     "pdf-parse": "^2.4.5",
     "yaml": "^2.8.2",
