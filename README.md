@@ -45,7 +45,7 @@ How they fit together over one teaching cycle:
    Assessment Suite     assess answers; reports and formative feedback
         │               (student work stays in this workspace)
         ▼
-   Teaching Suite       only teacher insights flow back — never student data
+   Teaching Suite       only teacher insights flow back — by design, no student data
                         (aggregate_logs unifies the timeline)
 ```
 
