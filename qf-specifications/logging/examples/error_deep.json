@@ -11,7 +11,7 @@
     "error_message": "Invalid question format at line 45",
     "stacktrace": "Traceback (most recent call last):\n  File \"validator.py\", line 123, in validate_question\n    raise ValidationError(msg)\nValidationError: Invalid question format at line 45",
     "input_context": {
-      "file": "/Users/username/project/02_working/questions.md",
+      "file": "/path/to/project/02_working/questions.md",
       "line_number": 45,
       "line_content": "## Fråga 5",
       "surrounding_lines": [

@@ -357,7 +357,7 @@ See docs/markdown_specification.md for details.
         output_file_path = Path(output_file)
         if output_file_path.is_absolute():
             # Absolute path: extract parent directory
-            # e.g., "/Users/.../Nextcloud/quiz.zip" → "/Users/.../Nextcloud/"
+            # e.g., "/path/to/Nextcloud/quiz.zip" → "/path/to/Nextcloud/"
             output_base_dir = output_file_path.parent
         else:
             # Relative paths (including subdirs like "Export QTI to Inspera/quiz.zip")

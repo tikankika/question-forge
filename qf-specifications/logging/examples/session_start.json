@@ -8,8 +8,8 @@
   "level": "info",
   "data": {
     "entry_point": "m2",
-    "source_file": "/Users/username/Courses/EXAMPLE_COURSE_B/syllabus.md",
+    "source_file": "/path/to/Courses/EXAMPLE_COURSE_B/syllabus.md",
     "project_name": "Entry_check_modul2_hv",
-    "output_folder": "/Users/username/Courses/EXAMPLE_COURSE_B/Test/Knowledge_Check"
+    "output_folder": "/path/to/Courses/EXAMPLE_COURSE_B/Test/Knowledge_Check"
   }
 }
