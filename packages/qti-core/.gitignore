@@ -1,0 +1,100 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+
+# Logs
+*.log
+logs/
+
+# Environment variables
+.env
+.env.local
+
+# Temporary files
+*.tmp
+*.bak
+*.backup
+temp/
+tmp/
+
+# QTI Import/Export folders and research materials (large reference files)
+Import_QT 2_2 from Inspera/
+QTI_test1/
+QTI_downloads_*/
+Research_Software_Protocol_v2.1/
+Software_Development_Protocol_v2.2/
+
+# Generated QTI packages and test outputs
+output/
+Downloads_Claude_generated/
+
+# Interactive script history
+.qti_history.json
+
+# Workflow settings (current session)
+.workflow_settings.json
+
+# Export folder with test data and images (unlicensed images removed)
+# Now tracked: Export QTI to Inspera/
+
+# Ignore picture files in export folders (unlicensed images)
+Export QTI to Inspera/**/*.png
+Export QTI to Inspera/**/*.jpg
+Export QTI to Inspera/**/*.jpeg
+Export QTI to Inspera/**/*.gif
+Export QTI to Inspera/**/*.bmp
+Export QTI to Inspera/**/*.svg

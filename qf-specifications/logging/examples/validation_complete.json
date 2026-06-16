@@ -1,0 +1,22 @@
+{
+  "ts": "2026-01-16T22:45:00.321Z",
+  "v": 1,
+  "session_id": "abc12345-6789-def0-1234-567890abcdef",
+  "mcp": "qf-pipeline",
+  "tool": "step2_validate",
+  "event": "tool_end",
+  "level": "info",
+  "data": {
+    "success": true,
+    "result": {
+      "questions_found": 20,
+      "questions_valid": 20,
+      "questions_invalid": 0,
+      "errors": [],
+      "warnings": [
+        {"question": "Q7", "message": "Consider adding more distractors"}
+      ]
+    }
+  },
+  "duration_ms": 2340
+}

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+QTI 2.2 Audio Record Template for Inspera
+Version: 1.0
+Last Updated: October 2025
+
+Template for audio recording questions where students record spoken responses.
+Requires manual grading by instructor.
+
+Key Features:
+- File upload interaction (audio recording)
+- Manual grading required
+- Simple feedback (answered/unanswered)
+- Configurable maximum score
+- Upload interaction with audio_record variant
+
+Metadata placeholders:
+- {{IDENTIFIER}}, {{TITLE}}, {{LANGUAGE}}
+- {{MAX_SCORE}}: Maximum points for the question
+
+Content placeholders:
+- {{QUESTION_IMAGES}}: Optional images in main illustration div
+- {{QUESTION_TEXT}}: Question prompt
+- {{UPLOAD_PROMPT}}: Recording button prompt text
+- {{FEEDBACK_UNANSWERED}}: Feedback when no recording submitted
+- {{FEEDBACK_ANSWERED}}: Feedback when recording submitted
+-->
+<assessmentItem
+    adaptive="false"
+    identifier="{{IDENTIFIER}}"
+    inspera:objectType="content_question_qti2_audio_record"
+    timeDependent="false"
+    title="{{TITLE}}"
+    xmlns="http://www.imsglobal.org/xsd/imsqti_v2p2"
+    xmlns:inspera="http://www.inspera.no/qti"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.imsglobal.org/xsd/imsqti_v2p2 http://www.imsglobal.org/xsd/qti/qtiv2p2/imsqti_v2p2.xsd">
+
+    <responseDeclaration baseType="file" cardinality="single" identifier="RESPONSE"/>
+
+    <outcomeDeclaration baseType="float" cardinality="single" identifier="SCORE">
+        <defaultValue><value>0</value></defaultValue>
+    </outcomeDeclaration>
+    <outcomeDeclaration baseType="identifier" cardinality="single" identifier="FEEDBACK"/>
+
+    <templateDeclaration baseType="float" cardinality="single" identifier="SCORE_ALL_CORRECT">
+        <defaultValue><value>{{MAX_SCORE}}</value></defaultValue>
+    </templateDeclaration>
+
+    <itemBody inspera:defaultLanguage="{{LANGUAGE}}" inspera:supportedLanguages="{{LANGUAGE}}">
+        <div class="question-main-illustration">{{QUESTION_IMAGES}}</div>
+
+        {{QUESTION_TEXT}}
+
+        <uploadInteraction inspera:variant="audio_record" responseIdentifier="RESPONSE">
+            <prompt>{{UPLOAD_PROMPT}}</prompt>
+        </uploadInteraction>
+    </itemBody>
+
+    <responseProcessing>
+        <responseCondition>
+            <responseIf>
+                <and><isNull><variable identifier="RESPONSE"/></isNull></and>
+                <setOutcomeValue identifier="FEEDBACK">
+                    <baseValue baseType="identifier">feedback_unanswered</baseValue>
+                </setOutcomeValue>
+            </responseIf>
+            <responseElse>
+                <setOutcomeValue identifier="FEEDBACK">
+                    <baseValue baseType="identifier">feedback_answered</baseValue>
+                </setOutcomeValue>
+            </responseElse>
+        </responseCondition>
+
+        <responseCondition inspera:type="max_score_upper_bound">
+            <responseIf>
+                <and><gte><variable identifier="SCORE"/><baseValue baseType="float">{{MAX_SCORE}}</baseValue></gte></and>
+                <setOutcomeValue identifier="SCORE"><baseValue baseType="float">{{MAX_SCORE}}</baseValue></setOutcomeValue>
+            </responseIf>
+        </responseCondition>
+    </responseProcessing>
+
+    <modalFeedback identifier="feedback_unanswered" outcomeIdentifier="FEEDBACK" showHide="show"><div>{{FEEDBACK_UNANSWERED}}</div></modalFeedback>
+    <modalFeedback identifier="feedback_answered" outcomeIdentifier="FEEDBACK" showHide="show"><div>{{FEEDBACK_ANSWERED}}</div></modalFeedback>
+
+</assessmentItem>

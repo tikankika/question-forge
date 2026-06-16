@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Assessment Test Template for Inspera Question Sets
+
+  This template matches Inspera's own export format for Question Sets.
+  It uses a minimal structure without score declarations (outcomeDeclaration,
+  outcomeProcessing) as these are not present in Inspera's exported Question Sets.
+
+  Features:
+  - Multiple sections (assessmentSection)
+  - Random selection (selection element)
+  - Shuffle support (ordering element)
+
+  Variables:
+    {{IDENTIFIER}} - Unique test identifier
+    {{TITLE}} - Test title
+    {{LANGUAGE}} - Language code (sv_se, en_us)
+    {{TEST_PART_ID}} - Test part identifier
+    {{SECTIONS}} - Generated section elements
+
+  Note: Inspera calculates scores internally; no maximumScore attribute needed.
+-->
+<assessmentTest
+    identifier="ID_{{IDENTIFIER}}"
+    title="{{TITLE}}"
+    xmlns="http://www.imsglobal.org/xsd/imsqti_v2p2"
+    xmlns:inspera="http://ns.inspera.no"
+    inspera:supportedLanguages="{{LANGUAGE}}">
+
+  <testPart
+      identifier="test-part-{{TEST_PART_ID}}"
+      navigationMode="nonlinear"
+      submissionMode="simultaneous">
+
+    <!-- Section template:
+    <assessmentSection
+        identifier="ID_section_1"
+        title="Section Name"
+        visible="false"
+        inspera:allowStimulusResizing="true"
+        inspera:stimulusSize="50">
+
+      <ordering shuffle="true"/>
+      <selection select="8"/>
+
+      <assessmentItemRef href="Q001-item.xml" identifier="ID_Q001"/>
+      <assessmentItemRef href="Q002-item.xml" identifier="ID_Q002"/>
+
+    </assessmentSection>
+    -->
+
+    {{SECTIONS}}
+
+  </testPart>
+</assessmentTest>

@@ -1,0 +1,15 @@
+{
+  "ts": "2026-01-16T22:35:00.456Z",
+  "v": 1,
+  "session_id": "abc12345-6789-def0-1234-567890abcdef",
+  "mcp": "qf-scaffolding",
+  "tool": "m2_stage3",
+  "event": "user_decision",
+  "level": "info",
+  "data": {
+    "decision_type": "question_count",
+    "options_presented": [15, 20, 25, 30],
+    "user_choice": 20,
+    "rationale": "Entry check for module 2, basic level assessment"
+  }
+}

@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+IMS Manifest Template for Inspera QTI Package
+Version: 1.1
+Last Updated: November 2025
+
+This template defines the package manifest that lists all assessment items in the QTI package.
+
+IMPORTANT: Inspera always uses literal "MANIFEST" as the manifest identifier (not a variable).
+
+Manifest-Level Metadata:
+- Lifecycle status (typically "Draft")
+- System metadata via taxons with <imsmd:id> (e.g., deployEnv)
+
+Resource-Level Metadata Structure:
+Each <resource> element can contain metadata with:
+1. User-visible labels (taxons WITHOUT <imsmd:id>)
+2. System metadata (taxons WITH <imsmd:id>)
+
+Label Encoding in Taxons:
+- Labels are searchable/filterable metadata visible to users
+- Encoded as taxons WITHOUT <imsmd:id> element
+- Use plain text values (NO prefixes like "LO:", "Bloom:", "Type:")
+- Examples:
+  * Learning objectives: "LO1", "LO2", "LO3" (NOT "LO:LO1")
+  * Bloom's taxonomy: "Remember", "Understand", "Apply" (NOT "Bloom:Remember")
+  * Custom tags: "EX_COURSE", "Week 1", "Exam" (NOT "Type:EX_COURSE")
+
+System Metadata in Taxons:
+- Internal metadata for system use (not user-visible filters)
+- Encoded as taxons WITH <imsmd:id> element
+- Examples: deployEnv, questionType, difficulty
+
+Inspera Question Type Object Types (inspera:objectType):
+┌──────────────────────────────────┬───────────────────────────────────────────────┐
+│ Question Type                    │ inspera:objectType Value                      │
+├──────────────────────────────────┼───────────────────────────────────────────────┤
+│ Multiple Choice (Single)         │ content_question_qti2_multiple_choice_single  │
+│ Multiple Response                │ content_question_qti2_multiple_response       │
+│ Text Entry (Fill in Blank)       │ content_question_qti2_text_entry              │
+│ Inline Choice (Dropdown)         │ content_question_qti2_inline_choice           │
+│ Extended Text                    │ content_question_qti2_extended_text           │
+│ Text Area (Short Answer)         │ content_question_qti2_text_area               │
+│ Gap Match (Drag Text to Gaps)    │ content_question_qti2_gapmatch                │
+│ Match (Associate Pairs)          │ content_question_qti2_match                   │
+│ Graphic Gap Match v2             │ content_question_qti2_graphicgapmatch_v2      │
+│ Text Entry Graphic               │ content_question_qti2_text_entry_graphic      │
+│ Audio Record                     │ content_question_qti2_audio_record            │
+│ Native HTML                      │ content_question_qti2_nativehtml              │
+│ Hotspot (Click on Image) [BETA]  │ content_question_qti2_hotspot                 │
+│ Composite Editor [BETA]          │ content_question_qti2_composite_editor        │
+└──────────────────────────────────┴───────────────────────────────────────────────┘
+
+Resource Metadata Example:
+<resource identifier="item_123" type="imsqti_item_xmlv2p2" href="item_123.xml">
+    <metadata>
+        <imsmd:lom>
+            <imsmd:general>
+                <imsmd:title><imsmd:langstring>Question Title</imsmd:langstring></imsmd:title>
+            </imsmd:general>
+            <imsmd:classification>
+                <!-- User-visible labels (NO <imsmd:id>) -->
+                <imsmd:taxonpath>
+                    <imsmd:taxon>
+                        <imsmd:entry><imsmd:langstring>LO1</imsmd:langstring></imsmd:entry>
+                    </imsmd:taxon>
+                </imsmd:taxonpath>
+                <imsmd:taxonpath>
+                    <imsmd:taxon>
+                        <imsmd:entry><imsmd:langstring>Remember</imsmd:langstring></imsmd:entry>
+                    </imsmd:taxon>
+                </imsmd:taxonpath>
+                <imsmd:taxonpath>
+                    <imsmd:taxon>
+                        <imsmd:entry><imsmd:langstring>EX_COURSE</imsmd:langstring></imsmd:entry>
+                    </imsmd:taxon>
+                </imsmd:taxonpath>
+
+                <!-- System metadata (WITH <imsmd:id>) -->
+                <imsmd:taxonpath>
+                    <imsmd:taxon>
+                        <imsmd:id>questionType</imsmd:id>
+                        <imsmd:entry><imsmd:langstring>multiple_choice</imsmd:langstring></imsmd:entry>
+                    </imsmd:taxon>
+                </imsmd:taxonpath>
+            </imsmd:classification>
+        </imsmd:lom>
+    </metadata>
+    <file href="item_123.xml"/>
+</resource>
+
+Placeholders:
+- {{RESOURCES}}: List of resource elements (one per question item)
+  Each resource should include:
+  * identifier: Unique resource ID matching the assessmentItem identifier
+  * href: Path to the XML file
+  * metadata: Optional resource-level metadata (labels, system metadata)
+  * file: File reference matching href
+-->
+<manifest
+    version="1.1"
+    identifier="MANIFEST"
+    xmlns="http://www.imsglobal.org/xsd/imscp_v1p1"
+    xmlns:imsmd="http://www.imsglobal.org/xsd/imsmd_v1p2"
+    xmlns:java="http://xml.apache.org/xalan/java">
+
+    <!-- Manifest metadata -->
+    <metadata>
+        <imsmd:lom>
+            <imsmd:lifecycle>
+                <imsmd:status>
+                    <imsmd:source>
+                        <imsmd:langstring xml:lang="x-none">LOMv1.0</imsmd:langstring>
+                    </imsmd:source>
+                    <imsmd:value>
+                        <imsmd:langstring xml:lang="x-none">Draft</imsmd:langstring>
+                    </imsmd:value>
+                </imsmd:status>
+            </imsmd:lifecycle>
+        </imsmd:lom>
+        <imsmd:classification>
+            <imsmd:taxonpath>
+                <imsmd:taxon>
+                    <imsmd:id>deployEnv</imsmd:id>
+                    <imsmd:entry>
+                        <imsmd:langstring>prod</imsmd:langstring>
+                    </imsmd:entry>
+                </imsmd:taxon>
+            </imsmd:taxonpath>
+        </imsmd:classification>
+    </metadata>
+
+    <!-- Resources: List of all question items in this package -->
+    <resources>
+        {{RESOURCES}}
+    </resources>
+</manifest>

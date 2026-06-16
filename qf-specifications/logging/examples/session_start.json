@@ -1,0 +1,15 @@
+{
+  "ts": "2026-01-16T22:30:00.123Z",
+  "v": 1,
+  "session_id": "abc12345-6789-def0-1234-567890abcdef",
+  "mcp": "qf-pipeline",
+  "tool": "step0_start",
+  "event": "session_start",
+  "level": "info",
+  "data": {
+    "entry_point": "m2",
+    "source_file": "/Users/username/Courses/EXAMPLE_COURSE_B/syllabus.md",
+    "project_name": "Entry_check_modul2_hv",
+    "output_folder": "/Users/username/Courses/EXAMPLE_COURSE_B/Test/Knowledge_Check"
+  }
+}

@@ -1,0 +1,369 @@
+# TYPE REQUIREMENT: multiple_choice_single
+# Flervalsfråga med ETT rätt svar
+# Version: 1.0
+# Inspera type: multipleChoice
+
+name: "Flervalsfråga (ett rätt svar)"
+name_en: "Multiple Choice (Single Answer)"
+code: "multiple_choice_single"
+inspera_type: "multipleChoice"
+description: |
+  Fråga där studenten väljer ETT svar bland flera alternativ.
+  Vanligaste frågetypen. Används för faktakunskap och förståelse.
+
+# ════════════════════════════════════════════════════════════════════
+# REQUIRED METADATA (måste finnas för export)
+# ════════════════════════════════════════════════════════════════════
+
+required_metadata:
+  - field: "^question"
+    description: "Fråge-ID"
+    pattern: "Q\\d{3}[A-Z]?"
+    examples: ["Q001", "Q002", "Q010B"]
+    required: true
+    
+  - field: "^type"
+    description: "Frågetyp"
+    value: "multiple_choice_single"
+    required: true
+    
+  - field: "^identifier"
+    description: "Unik identifierare för Inspera"
+    pattern: "[A-Z][A-Z0-9_]*"
+    examples: ["BIO_PHY_Q001", "MC_Q001", "EX_COURSE_L2A_01"]
+    required: true
+    auto_generate: true
+    auto_pattern: "{COURSE}_{TYPE}_{QUESTION_NUM}"
+    
+  - field: "^points"
+    description: "Poäng för frågan"
+    type: "integer"
+    min: 1
+    max: 10
+    default: 1
+    required: true
+    
+  - field: "^labels"
+    description: "Etiketter/taggar"
+    must_contain_bloom: true
+    must_contain_difficulty: true
+    bloom_values: ["Remember", "Understand", "Apply", "Analyze", "Evaluate", "Create"]
+    difficulty_values: ["Easy", "Medium", "Hard"]
+    examples: 
+      - "^labels #EXAMPLE_COURSE #Cellbiologi #Remember #Easy"
+      - "^labels #EX_COURSE #LCA #Apply #Medium"
+    required: true
+
+# ════════════════════════════════════════════════════════════════════
+# OPTIONAL METADATA
+# ════════════════════════════════════════════════════════════════════
+
+optional_metadata:
+  - field: "^title"
+    description: "Frågetitel (visas i Inspera admin)"
+    type: "string"
+    
+  - field: "^shuffle"
+    description: "Blanda alternativ vid visning"
+    type: "boolean"
+    values: ["Yes", "No"]
+    default: "Yes"
+
+# ════════════════════════════════════════════════════════════════════
+# REQUIRED FIELDS (måste finnas för export)
+# ════════════════════════════════════════════════════════════════════
+
+required_fields:
+
+  - name: "question_text"
+    description: "Själva frågetexten"
+    required: true
+    constraints:
+      min_length: 10
+      should_end_with: "?"
+    format: |
+      @field: question_text
+      Frågetexten här...
+      @end_field
+
+  - name: "options"
+    description: "Svarsalternativ"
+    required: true
+    constraints:
+      min_items: 3
+      max_items: 6
+      item_format: "^[A-F]\\. .+"
+      all_same_approximate_length: true
+    format: |
+      @field: options
+      A. Första alternativet
+      B. Andra alternativet
+      C. Tredje alternativet
+      D. Fjärde alternativet
+      @end_field
+    notes:
+      - "Använd A-F, inte 1-6"
+      - "Punkt efter bokstaven, inte parentes"
+      - "Alla alternativ bör vara ungefär lika långa"
+      - "Undvik 'Alla ovan' eller 'Inget av ovan'"
+
+  - name: "answer"
+    description: "Rätt svar"
+    required: true
+    constraints:
+      format: "single_letter"
+      valid_values: ["A", "B", "C", "D", "E", "F"]
+      must_match_option: true
+    format: |
+      @field: answer
+      B
+      @end_field
+    notes:
+      - "Endast EN bokstav"
+      - "Måste matcha ett av alternativen"
+
+  - name: "feedback"
+    description: "Feedback till student"
+    required: true
+    subfields:
+      - name: "general_feedback"
+        description: "Förklarande feedback som alltid visas"
+        required: true
+        min_length: 20
+        
+      - name: "correct_feedback"
+        description: "Feedback vid rätt svar"
+        required: true
+        
+      - name: "incorrect_feedback"
+        description: "Feedback vid fel svar"
+        required: true
+        
+      - name: "unanswered_feedback"
+        description: "Feedback om ej besvarat"
+        required: true
+        default: "Besvara frågan för att få feedback."
+        
+    format: |
+      @field: feedback
+      
+      @@field: general_feedback
+      Förklaring av konceptet och varför rätt svar är rätt...
+      @@end_field
+      
+      @@field: correct_feedback
+      Bra jobbat! [Kan vara samma som general]
+      @@end_field
+      
+      @@field: incorrect_feedback
+      Tänk på att... [Kan vara samma som general]
+      @@end_field
+      
+      @@field: unanswered_feedback
+      Besvara frågan för att få feedback.
+      @@end_field
+      
+      @end_field
+
+# ════════════════════════════════════════════════════════════════════
+# OPTIONAL FIELDS
+# ════════════════════════════════════════════════════════════════════
+
+optional_fields:
+
+  - name: "scoring"
+    description: "Poängberäkning (default: allt eller inget)"
+    format: |
+      @field: scoring
+      ^Type AllOrNothing
+      ^Points 1
+      @end_field
+
+  - name: "option_feedback"
+    description: "Specifik feedback per alternativ"
+    format: |
+      @field: option_feedback
+      @@field: option_A
+      Feedback om A väljs...
+      @@end_field
+      @@field: option_B
+      Feedback om B väljs...
+      @@end_field
+      @end_field
+
+# ════════════════════════════════════════════════════════════════════
+# COMMON ISSUES AND HOW TO DETECT/FIX
+# ════════════════════════════════════════════════════════════════════
+
+common_issues:
+
+  # METADATA ISSUES
+  - id: "missing_labels"
+    severity: "critical"
+    detect: "^labels finns inte"
+    message: "Saknar ^labels metadata"
+    ask_user: 
+      - question: "Vilken Bloom-nivå?"
+        options: ["Remember", "Understand", "Apply", "Analyze"]
+      - question: "Vilken svårighetsgrad?"
+        options: ["Easy", "Medium", "Hard"]
+    fix_template: "^labels #{COURSE} #{TOPIC} #{BLOOM} #{DIFFICULTY}"
+    
+  - id: "missing_identifier"
+    severity: "critical"
+    detect: "^identifier finns inte"
+    message: "Saknar ^identifier metadata"
+    auto_fix: true
+    fix_template: "{COURSE}_{TYPE_SHORT}_{QNUM}"
+    example: "BIO_MC_Q001"
+    
+  - id: "missing_points"
+    severity: "critical"
+    detect: "^points finns inte"
+    message: "Saknar ^points metadata"
+    auto_fix: true
+    fix_value: "^points 1"
+
+  # FORMAT ISSUES
+  - id: "options_numbered"
+    severity: "critical"
+    detect: "^\\d+[.)\\s]"
+    message: "Alternativ numrerade (1,2,3) istället för bokstäver (A,B,C)"
+    auto_fix: true
+    transform:
+      "1.": "A."
+      "2.": "B."
+      "3.": "C."
+      "4.": "D."
+      "5.": "E."
+      "6.": "F."
+      "1)": "A."
+      "2)": "B."
+      # etc.
+
+  - id: "options_lowercase"
+    severity: "warning"
+    detect: "^[a-f][.)\\s]"
+    message: "Alternativ med små bokstäver (a,b,c) istället för stora (A,B,C)"
+    auto_fix: true
+    transform:
+      "a.": "A."
+      "b.": "B."
+      "c.": "C."
+      "d.": "D."
+      "e.": "E."
+      "f.": "F."
+
+  - id: "answer_multiple"
+    severity: "critical"
+    detect: "answer innehåller , eller och"
+    message: "Flera svar angivna - borde vara multiple_response?"
+    ask_user: "Ska frågan ha flera rätta svar? Då byt till multiple_response."
+
+  # CONTENT ISSUES
+  - id: "too_few_options"
+    severity: "critical"
+    detect: "färre än 3 alternativ"
+    message: "Endast {N} alternativ. Minimum är 3."
+    ask_user: "Lägg till fler alternativ eller ändra frågetyp."
+    
+  - id: "too_many_options"
+    severity: "warning"
+    detect: "fler än 6 alternativ"
+    message: "{N} alternativ. Rekommenderat max är 6."
+    ask_user: "Överväg att minska antalet alternativ."
+
+  - id: "question_no_questionmark"
+    severity: "info"
+    detect: "frågetext slutar inte med ?"
+    message: "Frågan slutar inte med frågetecken"
+    auto_fix: true
+    fix: "Lägg till ?"
+
+  # FEEDBACK ISSUES
+  - id: "missing_general_feedback"
+    severity: "warning"
+    detect: "general_feedback saknas eller tom"
+    message: "Saknar general_feedback"
+    suggest_content: true
+    suggestion_prompt: "Generera förklarande feedback baserat på frågan och rätt svar"
+    
+  - id: "identical_feedback"
+    severity: "info"
+    detect: "correct_feedback == incorrect_feedback"
+    message: "Samma feedback för rätt och fel svar"
+    ask_user: "Vill du ha olika feedback för rätt/fel svar?"
+
+  # OLD SYNTAX
+  - id: "old_metadata_syntax"
+    severity: "critical"
+    detect: "@question: eller @type: eller @tags:"
+    message: "Legacy metadata syntax (needs QFMD conversion)"
+    auto_fix: true
+    transform:
+      "@question:": "^question"
+      "@type:": "^type"
+      "@identifier:": "^identifier"
+      "@title:": "^title"
+      "@points:": "^points"
+      "@tags:": "^labels"
+      "@labels:": "^labels"
+
+  - id: "missing_end_field"
+    severity: "critical"
+    detect: "@field: utan matchande @end_field"
+    message: "Saknar @end_field"
+    auto_fix: true
+    fix: "Lägg till @end_field efter field-innehåll"
+
+# ════════════════════════════════════════════════════════════════════
+# COMPLETE EXAMPLE (QFMD format)
+# ════════════════════════════════════════════════════════════════════
+
+complete_example: |
+  # Q001 Vad gör galla i matsmältningen
+  ^question Q001
+  ^type multiple_choice_single
+  ^identifier BIO_PHY_Q001
+  ^title Vad gör galla i matsmältningen
+  ^points 1
+  ^labels #EXAMPLE_COURSE #Matsmältning #Understand #Easy
+  ^shuffle Yes
+  
+  @field: question_text
+  Vad är funktionen av galla i matsmältningen?
+  @end_field
+  
+  @field: options
+  A. Bryter ner proteiner
+  B. Emulgerar fetter
+  C. Neutraliserar magsyra
+  D. Bryter ner kolhydrater
+  @end_field
+  
+  @field: answer
+  B
+  @end_field
+  
+  @field: feedback
+  
+  @@field: general_feedback
+  Galla emulgerar (delar upp) fetter till mindre droppar, vilket ökar 
+  ytan för lipasenzymer att verka på. Galla är INTE ett enzym och 
+  bryter därför inte ner någonting kemiskt.
+  @@end_field
+  
+  @@field: correct_feedback
+  Rätt! Galla emulgerar fetter, vilket underlättar fettsmältningen.
+  @@end_field
+  
+  @@field: incorrect_feedback
+  Tänk på att galla inte är ett enzym. Den hjälper till genom att 
+  dela upp fett i mindre droppar.
+  @@end_field
+  
+  @@field: unanswered_feedback
+  Besvara frågan för att få feedback.
+  @@end_field
+  
+  @end_field

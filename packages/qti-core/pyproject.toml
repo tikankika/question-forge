@@ -1,0 +1,123 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qti-generator-inspera"
+version = "0.2.4"
+description = "Convert markdown quiz files to QTI 2.2 packages for Inspera Assessment Platform"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "PolyForm-Noncommercial-1.0.0"}
+authors = [
+    {name = "Niklas Karlsson", email = "tikankika@users.noreply.github.com"}
+]
+keywords = [
+    "qti",
+    "inspera",
+    "assessment",
+    "education",
+    "test-generation",
+    "quiz",
+    "e-learning",
+    "markdown"
+]
+classifiers = [
+    "Private :: Do Not Upload",
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Education",
+    "License :: Free for non-commercial use",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Education :: Testing",
+    "Topic :: Education :: Computer Aided Instruction (CAI)",
+]
+
+dependencies = [
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "black>=23.0",
+    "flake8>=6.0",
+    "mypy>=1.0",
+    "types-PyYAML",
+]
+
+[project.urls]
+Homepage = "https://github.com/tikankika/question-forge"
+Documentation = "https://github.com/tikankika/question-forge/tree/main/packages/qti-core"
+Repository = "https://github.com/tikankika/question-forge"
+Issues = "https://github.com/tikankika/question-forge/issues"
+Changelog = "https://github.com/tikankika/question-forge/blob/main/CHANGELOG.md"
+
+[project.scripts]
+qti-gen = "src.cli:main"
+
+[tool.setuptools]
+packages = ["src.parser", "src.generator", "src.packager"]
+
+[tool.setuptools.package-data]
+"*" = ["*.xml", "*.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--verbose",
+    "--cov=src",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py38", "py39", "py310", "py311", "py312"]
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.git
+  | \.mypy_cache
+  | \.pytest_cache
+  | \.venv
+  | build
+  | dist
+  | output
+)/
+'''
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+follow_imports = "normal"
+ignore_missing_imports = true
+
+[tool.flake8]
+max-line-length = 100
+extend-ignore = ["E203", "W503"]
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    ".venv",
+    "output",
+]

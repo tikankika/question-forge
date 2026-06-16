@@ -1,0 +1,289 @@
+# TYPE REQUIREMENT: text_entry
+# Fyll-i-lucka fråga (fill in the blank)
+# Version: 1.0
+# Inspera type: textEntryInteraction
+
+name: "Fyll i lucka"
+name_en: "Text Entry / Fill in the Blank"
+code: "text_entry"
+inspera_type: "textEntryInteraction"
+description: |
+  Fråga där studenten skriver in ett kort svar i en eller flera luckor.
+  Automatisk rättning mot fördefinierade accepterade svar.
+  Bra för terminologi, definitioner, och faktakunskap.
+
+# ════════════════════════════════════════════════════════════════════
+# REQUIRED METADATA
+# ════════════════════════════════════════════════════════════════════
+
+required_metadata:
+  - field: "^question"
+    pattern: "Q\\d{3}[A-Z]?"
+    required: true
+    
+  - field: "^type"
+    value: "text_entry"
+    required: true
+    
+  - field: "^identifier"
+    pattern: "[A-Z][A-Z0-9_]*"
+    required: true
+    
+  - field: "^points"
+    type: "integer"
+    notes: "1 poäng per blank vanligt"
+    required: true
+    
+  - field: "^labels"
+    must_contain_bloom: true
+    must_contain_difficulty: true
+    required: true
+
+# ════════════════════════════════════════════════════════════════════
+# REQUIRED FIELDS
+# ════════════════════════════════════════════════════════════════════
+
+required_fields:
+
+  - name: "question_text"
+    description: "Frågetext med lucka/luckor"
+    required: true
+    constraints:
+      must_contain: "{{blank_N}}"
+      blank_format: "{{blank_1}}, {{blank_2}}, etc."
+    format: |
+      @field: question_text
+      Den process där celler delar sig kallas {{blank_1}}.
+      @end_field
+    notes:
+      - "Använd {{blank_1}}, {{blank_2}} etc. för luckor"
+      - "INTE {{BLANK-1}} (gammal syntax)"
+      - "Luckan bör vara ett nyckelord, inte ett helt meningsuttryck"
+
+  - name: "blanks"
+    description: "Definition av varje lucka"
+    required: true
+    contains_subfields: true
+    format: |
+      @field: blanks
+      
+      @@field: blank_1
+      ^Correct_Answers
+      - mitos
+      - Mitos
+      - celldelning
+      ^Case_Sensitive No
+      @@end_field
+      
+      @end_field
+    subfield_requirements:
+      - name: "blank_N"
+        required_per_blank: true
+        must_have:
+          - "^Correct_Answers"
+          - "^Case_Sensitive"
+        notes:
+          - "Lista alla accepterade svar"
+          - "Inkludera vanliga stavningsvarianter"
+          - "Både med och utan stor bokstav"
+
+  - name: "feedback"
+    description: "Feedback"
+    required: true
+    subfields:
+      - name: "general_feedback"
+        required: true
+      - name: "correct_feedback"
+        required: true
+      - name: "incorrect_feedback"
+        required: true
+      - name: "unanswered_feedback"
+        required: true
+    format: |
+      @field: feedback
+      
+      @@field: general_feedback
+      Förklaring av begreppet...
+      @@end_field
+      
+      @@field: correct_feedback
+      Rätt! ...
+      @@end_field
+      
+      @@field: incorrect_feedback
+      Rätt svar är [X]. ...
+      @@end_field
+      
+      @@field: unanswered_feedback
+      Besvara frågan för att få feedback.
+      @@end_field
+      
+      @end_field
+
+# ════════════════════════════════════════════════════════════════════
+# OPTIONAL FIELDS
+# ════════════════════════════════════════════════════════════════════
+
+optional_fields:
+
+  - name: "scoring"
+    description: "Poängberäkning per lucka"
+    format: |
+      @field: scoring
+      ^Type ExactMatch
+      ^Points_Per_Blank 1
+      @end_field
+
+# ════════════════════════════════════════════════════════════════════
+# COMMON ISSUES
+# ════════════════════════════════════════════════════════════════════
+
+common_issues:
+
+  - id: "old_blank_syntax"
+    severity: "critical"
+    detect: "{{BLANK-\\d+}}"
+    message: "Gammal lucka-syntax {{BLANK-1}}, ska vara {{blank_1}}"
+    auto_fix: true
+    transform:
+      "{{BLANK-1}}": "{{blank_1}}"
+      "{{BLANK-2}}": "{{blank_2}}"
+      "{{BLANK-3}}": "{{blank_3}}"
+
+  - id: "blank_mismatch"
+    severity: "critical"
+    detect: "antal {{blank_N}} i text != antal @@field: blank_N"
+    message: "Antalet luckor i texten matchar inte antalet blank-definitioner"
+    ask_user: "Kontrollera att varje lucka har en matchande definition"
+
+  - id: "missing_case_sensitive"
+    severity: "warning"
+    detect: "^Case_Sensitive saknas i blank"
+    message: "Case_Sensitive inte angiven, default är No"
+    auto_fix: true
+    fix: "^Case_Sensitive No"
+
+  - id: "single_answer_only"
+    severity: "warning"
+    detect: "bara ett svar i Correct_Answers"
+    message: "Endast ett accepterat svar - överväg att lägga till varianter"
+    suggest: |
+      Lägg till vanliga varianter som:
+      - Med/utan stor bokstav
+      - Singular/plural
+      - Vanliga felstavningar som accepteras
+
+  - id: "old_correct_answers_syntax"
+    severity: "critical"
+    detect: "\\*\\*Correct Answers:\\*\\*"
+    message: "Gammal syntax **Correct Answers:** ska vara ^Correct_Answers"
+    auto_fix: true
+    transform:
+      "**Correct Answers:**": "^Correct_Answers"
+      "**Case Sensitive:**": "^Case_Sensitive"
+
+  - id: "missing_blank_definition"
+    severity: "critical"
+    detect: "{{blank_N}} finns i text men @@field: blank_N saknas"
+    message: "Lucka {{blank_{N}}} saknar definition"
+    ask_user: "Vilka svar ska accepteras för denna lucka?"
+
+# ════════════════════════════════════════════════════════════════════
+# COMPLETE EXAMPLE
+# ════════════════════════════════════════════════════════════════════
+
+complete_example: |
+  # Q001 Muskelrörelse i mag-tarmkanalen
+  ^question Q001
+  ^type text_entry
+  ^identifier BIO_PHY_Q001
+  ^title Muskelrörelse i mag-tarmkanalen
+  ^points 1
+  ^labels #EXAMPLE_COURSE #Matsmältning #Peristaltik #Remember #Easy
+  
+  @field: question_text
+  Den muskelrörelse som pressar maten framåt genom mag-tarmkanalen 
+  kallas {{blank_1}}.
+  @end_field
+  
+  @field: blanks
+  
+  @@field: blank_1
+  ^Correct_Answers
+  - peristaltik
+  - Peristaltik
+  - peristaltiken
+  - Peristaltiken
+  ^Case_Sensitive No
+  @@end_field
+  
+  @end_field
+  
+  @field: scoring
+  ^Type ExactMatch
+  ^Points 1
+  @end_field
+  
+  @field: feedback
+  
+  @@field: general_feedback
+  Peristaltik är de vågrörelser som den glatta muskulaturen i 
+  mag-tarmkanalens vägg utför för att pressa maten framåt. 
+  Denna process är ofrivillig och styrs av det autonoma nervsystemet.
+  @@end_field
+  
+  @@field: correct_feedback
+  Rätt! Peristaltik är de muskelsammandragningar som för maten framåt.
+  @@end_field
+  
+  @@field: incorrect_feedback
+  Rätt svar är peristaltik. Det är vågrörelser i tarmväggen.
+  @@end_field
+  
+  @@field: unanswered_feedback
+  Besvara frågan för att få feedback.
+  @@end_field
+  
+  @end_field
+
+# ════════════════════════════════════════════════════════════════════
+# MULTIPLE BLANKS EXAMPLE
+# ════════════════════════════════════════════════════════════════════
+
+multiple_blanks_example: |
+  # Q005 DNA och RNA
+  ^question Q005
+  ^type text_entry
+  ^identifier BIO_DNA_Q005
+  ^points 2
+  ^labels #EXAMPLE_COURSE #Genetik #Remember #Medium
+  
+  @field: question_text
+  DNA är uppbyggt av {{blank_1}} kedjor, medan RNA har {{blank_2}} kedja/kedjor.
+  @end_field
+  
+  @field: blanks
+  
+  @@field: blank_1
+  ^Correct_Answers
+  - två
+  - 2
+  - dubbel
+  ^Case_Sensitive No
+  @@end_field
+  
+  @@field: blank_2
+  ^Correct_Answers
+  - en
+  - 1
+  - enkel
+  ^Case_Sensitive No
+  @@end_field
+  
+  @end_field
+  
+  @field: scoring
+  ^Type PartialCredit
+  ^Points_Per_Blank 1
+  ^Total 2
+  @end_field

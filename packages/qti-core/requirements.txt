@@ -1,0 +1,15 @@
+# QTI Generator for Inspera - Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# YAML parsing for frontmatter
+PyYAML>=6.0
+
+# Terminal formatting and colors for interactive scripts
+rich>=13.0.0
+
+# Markdown to HTML conversion (optional - basic conversion built-in)
+# markdown>=3.4.0
+
+# For future enhancements:
+# lxml>=4.9.0  # XML validation and processing
+# jinja2>=3.1.0  # Advanced template rendering

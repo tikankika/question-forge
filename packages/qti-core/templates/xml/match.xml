@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+QTI 2.2 Match Template for Inspera
+Version: 1.0
+Last Updated: October 2025
+
+This template defines the structure for matching questions (associating pairs).
+Students match items from left column to items in right column.
+Automatically scored using directed pair mapping with partial credit support.
+
+Key Features:
+- Two columns: premises (left) and responses (right)
+- Multiple correct pairings
+- Randomize and shuffle options
+- Max associations limit
+- Partial credit (points per correct match, penalty for wrong)
+- Minimum score enforcement
+
+Metadata placeholders:
+- {{IDENTIFIER}}: Unique question identifier
+- {{TITLE}}: Question title
+- {{LANGUAGE}}: ISO 639-1 language code
+- {{POINTS_EACH_CORRECT}}: Points per correct match
+- {{POINTS_EACH_WRONG}}: Points per incorrect match (typically 0 or negative)
+- {{POINTS_ALL_CORRECT}}: Total/maximum points
+- {{POINTS_MINIMUM}}: Minimum score (floor)
+- {{POINTS_UNANSWERED}}: Score for unanswered
+
+Content placeholders:
+- {{QUESTION_TEXT}}: The question prompt
+- {{PROMPT_TEXT}}: Instruction text (e.g., "Match the values:")
+- {{MAX_ASSOCIATIONS}}: Maximum number of matches allowed
+- {{RANDOMIZE}}: all or none - randomize item order
+- {{SHUFFLE}}: true or false - shuffle within sets
+- {{LEFT_COLUMN_ITEMS}}: List of premises (generated)
+- {{RIGHT_COLUMN_ITEMS}}: List of responses (generated)
+- {{CORRECT_PAIRS}}: List of correct directed pairs (generated)
+- {{MAPPING_ENTRIES}}: Scoring map entries (generated)
+
+Response processing placeholders (generated):
+- {{CORRECT_PAIR_CHECKS}}: Member checks for all correct pairs
+- {{ANY_CORRECT_PAIR_CHECKS}}: Any pair correct checks
+
+Left column format (premises):
+<simpleAssociableChoice identifier="{{PREMISE_ID}}" matchMax="1">
+    <span class="label">{{PREMISE_TEXT}}</span>
+</simpleAssociableChoice>
+
+Right column format (responses - can match multiple):
+<simpleAssociableChoice identifier="{{RESPONSE_ID}}" matchMax="{{MAX_MATCHES}}">
+    <span class="label">{{RESPONSE_TEXT}}</span>
+</simpleAssociableChoice>
+
+Correct response format:
+<value>{{PREMISE_ID}} {{RESPONSE_ID}}</value>
+
+Mapping entry format:
+<mapEntry mapKey="{{PREMISE_ID}} {{RESPONSE_ID}}" mappedValue="{{POINTS_EACH_CORRECT}}"/>
+-->
+<assessmentItem
+    adaptive="false"
+    identifier="{{IDENTIFIER}}"
+    inspera:objectType="content_question_qti2_match"
+    timeDependent="false"
+    title="{{TITLE}}"
+    xmlns="http://www.imsglobal.org/xsd/imsqti_v2p2"
+    xmlns:inspera="http://www.inspera.no/qti"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.imsglobal.org/xsd/imsqti_v2p2 http://www.imsglobal.org/xsd/qti/qtiv2p2/imsqti_v2p2.xsd">
+
+    <!-- Response Declaration: Directed pairs -->
+    <responseDeclaration baseType="directedPair" cardinality="multiple" identifier="RESPONSE-1">
+        <correctResponse>
+            {{CORRECT_PAIRS}}
+        </correctResponse>
+        <mapping defaultValue="{{POINTS_EACH_WRONG}}">
+            {{MAPPING_ENTRIES}}
+        </mapping>
+    </responseDeclaration>
+
+    <!-- Outcome Declaration: Score -->
+    <outcomeDeclaration baseType="float" cardinality="single" identifier="SCORE">
+        <defaultValue>
+            <value>0</value>
+        </defaultValue>
+    </outcomeDeclaration>
+
+    <!-- Outcome Declaration: Feedback identifier -->
+    <outcomeDeclaration baseType="identifier" cardinality="single" identifier="FEEDBACK"/>
+
+    <!-- Template Declarations: Scoring configuration -->
+    <templateDeclaration baseType="float" cardinality="single" identifier="SCORE_EACH_CORRECT">
+        <defaultValue>
+            <value>{{POINTS_EACH_CORRECT}}</value>
+        </defaultValue>
+    </templateDeclaration>
+
+    <templateDeclaration baseType="float" cardinality="single" identifier="SCORE_EACH_WRONG">
+        <defaultValue>
+            <value>{{POINTS_EACH_WRONG}}</value>
+        </defaultValue>
+    </templateDeclaration>
+
+    <templateDeclaration baseType="float" cardinality="single" identifier="SCORE_ALL_CORRECT">
+        <defaultValue>
+            <value>{{POINTS_ALL_CORRECT}}</value>
+        </defaultValue>
+    </templateDeclaration>
+
+    <templateDeclaration baseType="float" cardinality="single" identifier="SCORE_MINIMUM">
+        <defaultValue>
+            <value>{{POINTS_MINIMUM}}</value>
+        </defaultValue>
+    </templateDeclaration>
+
+    <templateDeclaration baseType="float" cardinality="single" identifier="SCORE_UNANSWERED">
+        <defaultValue>
+            <value>{{POINTS_UNANSWERED}}</value>
+        </defaultValue>
+    </templateDeclaration>
+
+    <!-- Item Body: Question and match interaction -->
+    <itemBody inspera:defaultLanguage="{{LANGUAGE}}" inspera:supportedLanguages="{{LANGUAGE}}">
+        <!-- Optional question illustration area -->
+        <div class="question-main-illustration">
+            {{QUESTION_IMAGES}}
+        </div>
+
+        <!-- Question text -->
+        {{QUESTION_TEXT}}
+
+        <!-- Match Interaction: Two-column matching -->
+        <matchInteraction
+            maxAssociations="{{MAX_ASSOCIATIONS}}"
+            randomise="{{RANDOMIZE}}"
+            responseIdentifier="RESPONSE-1"
+            shuffle="{{SHUFFLE}}">
+
+            <prompt>{{PROMPT_TEXT}}</prompt>
+
+            <!-- Left column: Premises to match -->
+            <simpleMatchSet>
+                {{LEFT_COLUMN_ITEMS}}
+            </simpleMatchSet>
+
+            <!-- Right column: Responses to match with -->
+            <simpleMatchSet>
+                {{RIGHT_COLUMN_ITEMS}}
+            </simpleMatchSet>
+        </matchInteraction>
+    </itemBody>
+
+    <!-- Response Processing: Score calculation and feedback assignment -->
+    <responseProcessing>
+        <!-- Scoring logic: Check if unanswered or map to score -->
+        <responseCondition>
+            <responseIf>
+                <and>
+                    <isNull>
+                        <variable identifier="RESPONSE-1"/>
+                    </isNull>
+                </and>
+                <setOutcomeValue identifier="SCORE">
+                    <variable identifier="SCORE_UNANSWERED"/>
+                </setOutcomeValue>
+            </responseIf>
+            <responseElse>
+                <setOutcomeValue identifier="SCORE">
+                    <sum>
+                        <variable identifier="SCORE"/>
+                        <mapResponse identifier="RESPONSE-1"/>
+                    </sum>
+                </setOutcomeValue>
+            </responseElse>
+        </responseCondition>
+
+        <!-- Feedback logic: Determine which feedback to show -->
+        <responseCondition>
+            <!-- Unanswered -->
+            <responseIf>
+                <and>
+                    <isNull>
+                        <variable identifier="RESPONSE-1"/>
+                    </isNull>
+                </and>
+                <setOutcomeValue identifier="FEEDBACK">
+                    <baseValue baseType="identifier">feedback_unanswered</baseValue>
+                </setOutcomeValue>
+            </responseIf>
+
+            <!-- All correct (all pairs matched) -->
+            <responseElseIf>
+                <and>
+                    {{CORRECT_PAIR_CHECKS}}
+                </and>
+                <setOutcomeValue identifier="FEEDBACK">
+                    <baseValue baseType="identifier">feedback_correct</baseValue>
+                </setOutcomeValue>
+                <setOutcomeValue identifier="SCORE">
+                    <variable identifier="SCORE_ALL_CORRECT"/>
+                </setOutcomeValue>
+            </responseElseIf>
+
+            <!-- Partially correct (at least one correct pair) -->
+            <responseElseIf>
+                <or>
+                    {{ANY_CORRECT_PAIR_CHECKS}}
+                </or>
+                <setOutcomeValue identifier="FEEDBACK">
+                    <baseValue baseType="identifier">feedback_partially_correct</baseValue>
+                </setOutcomeValue>
+            </responseElseIf>
+
+            <!-- All incorrect -->
+            <responseElse>
+                <setOutcomeValue identifier="FEEDBACK">
+                    <baseValue baseType="identifier">feedback_wrong</baseValue>
+                </setOutcomeValue>
+            </responseElse>
+        </responseCondition>
+
+        <!-- Enforce minimum score lower bound -->
+        <responseCondition inspera:type="min_score_lower_bound">
+            <responseIf>
+                <lt>
+                    <variable identifier="SCORE"/>
+                    <variable identifier="SCORE_MINIMUM"/>
+                </lt>
+                <setOutcomeValue identifier="SCORE">
+                    <variable identifier="SCORE_MINIMUM"/>
+                </setOutcomeValue>
+            </responseIf>
+        </responseCondition>
+
+        <!-- Enforce maximum score upper bound -->
+        <responseCondition inspera:type="max_score_upper_bound">
+            <responseIf>
+                <and>
+                    <gte>
+                        <variable identifier="SCORE"/>
+                        <baseValue baseType="float">{{POINTS_ALL_CORRECT}}</baseValue>
+                    </gte>
+                </and>
+                <setOutcomeValue identifier="SCORE">
+                    <baseValue baseType="float">{{POINTS_ALL_CORRECT}}</baseValue>
+                </setOutcomeValue>
+            </responseIf>
+        </responseCondition>
+    </responseProcessing>
+
+    <!-- Modal Feedback: Feedback messages -->
+    <modalFeedback identifier="feedback_unanswered" outcomeIdentifier="FEEDBACK" showHide="show"><div>{{FEEDBACK_UNANSWERED}}</div></modalFeedback>
+    <modalFeedback identifier="feedback_wrong" outcomeIdentifier="FEEDBACK" showHide="show"><div>{{FEEDBACK_INCORRECT}}</div></modalFeedback>
+    <modalFeedback identifier="feedback_correct" outcomeIdentifier="FEEDBACK" showHide="show"><div>{{FEEDBACK_CORRECT}}</div></modalFeedback>
+    <modalFeedback identifier="feedback_partially_correct" outcomeIdentifier="FEEDBACK" showHide="show"><div>{{FEEDBACK_PARTIALLY_CORRECT}}</div></modalFeedback>
+
+</assessmentItem>
