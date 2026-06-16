@@ -11,6 +11,61 @@ QuestionForge helps educators create pedagogically sound assessment questions th
 
 The teacher stays in control at every step — the tools scaffold and document the method; they do not replace the teacher's judgement.
 
+## Part of a teaching-and-assessment ecosystem
+
+These tools share one philosophy — *teacher-led: scaffolding, not automation* — and
+one design: MCP servers (and one pipeline) that run locally over plain-Markdown
+workspaces, each locked to a folder with no network service of their own. They are
+split along a deliberate data boundary: the **teaching side never holds student
+personal data**, and the **assessment side keeps student work walled off** in its
+own workspace.
+
+| Tool | Role | Side |
+|------|------|------|
+| **edusafe-pipeline** | Anonymise Swedish classroom recordings and transcripts offline (names → pseudonyms) before anything is shared or reused. | Data-safety gate |
+| **Teaching Suite** | Plan lessons, capture ideas, and reflect across lesson, course, and profession cycles. | Teaching — course workspace, no student PII |
+| **QuestionForge** | Author exam questions from what was actually taught and export them to QTI for Inspera. Belongs to the teaching side by data zone (course material, no student data) but runs fully on its own — Teaching Suite is not required. | Teaching — course workspace, no student PII |
+| **Assessment Suite** | Assess open-response answers aspect by aspect, with cited evidence and feedback — the teacher deciding every judgement. | Assessment — separate workspace, student data stays here |
+
+How they fit together over one teaching cycle:
+
+```
+   edusafe-pipeline     anonymise recordings/transcripts (offline, names → pseudonyms)
+        │
+        ▼
+   Teaching Suite       plan lessons, capture ideas, reflect
+        │
+        ▼
+   QuestionForge        author exam questions from what was taught
+        │
+        ▼
+   Inspera / QTI LMS    exam delivered and sat
+        │
+        ▼
+   Assessment Suite     assess answers; reports and formative feedback
+        │               (student work stays in this workspace)
+        ▼
+   Teaching Suite       only teacher insights flow back — never student data
+                        (aggregate_logs unifies the timeline)
+```
+
+**Your folders, your files.** Everything every tool writes is plain Markdown in your
+own Nextcloud workspace — no database, no lock-in. The files are the source of truth
+and stay readable on their own, with or without the tools. The teaching side and the
+assessment side are deliberately *separate* folders, so student work never lands in the
+course workspace; only anonymised *insights about teaching* flow from Assessment Suite
+back to Teaching Suite. Point an Obsidian vault at a workspace (one per side, to keep the
+data boundary intact) and your Markdown becomes a browsable, linkable web of your
+practice — richer still where a tool writes `[[wikilinks]]` and `#tags`, as Teaching
+Suite does. Sync the folders — for example via Nextcloud — and they follow you across
+machines.
+
+All tools are licensed under PolyForm Noncommercial 1.0.0.
+
+> You are reading the **QuestionForge** README — see also
+> [Teaching Suite](https://github.com/tikankika/teaching-suite) and
+> [Assessment Suite](https://github.com/tikankika/assessment-suite).
+
 ## The three packages (pick your door)
 
 QuestionForge is a small monorepo of three independent packages. Use whichever fits your need:
@@ -84,6 +139,7 @@ Instructional materials
 ## Documentation
 
 - [Getting Started](docs/GETTING_STARTED.md) — installation and your first project
+- [Teacher Guide](docs/TEACHER_GUIDE.md) — working with Claude to author questions
 - [Workflow Guide](WORKFLOW.md) — the complete process
 - [Methodology](methodology/) — the M1–M5 guides (in the guides, 🔷 marks a mechanised/executable check and 🔶 a human-judgement check)
 - [Contributing](CONTRIBUTING.md)
@@ -93,9 +149,9 @@ Instructional materials
 **PolyForm Noncommercial 1.0.0** — free for noncommercial use (including education and research); commercial use requires a separate licence. See [LICENSE](LICENSE).
 
 - ✅ Use for educational purposes
-- ✅ Adapt and build upon (share alike)
-- ✅ Share with attribution
-- ❌ Commercial use without permission
+- ✅ Adapt and build upon for noncommercial use
+- ✅ Share and redistribute, keeping the licence notice
+- ❌ Commercial use without a separate licence
 
 ## Acknowledgements
 
