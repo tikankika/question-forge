@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+title: "QuestionForge"
+message: "If you use this software in your research, please cite it as below."
+type: software
+authors:
+  - given-names: Niklas
+    family-names: Karlsson
+    orcid: ""            # optional — leave blank for now (siblings also blank); add later from orcid.org and harmonise across all three
+repository-code: "https://github.com/tikankika/question-forge"
+url: "https://github.com/tikankika/question-forge"
+license: PolyForm-Noncommercial-1.0.0
+version: "0.1.0"
+date-released: "2026-06-17"
+keywords:
+  - educational-assessment
+  - mcp-server
+  - question-generation
+  - qti
+  - assessment-design
+  - formative-assessment
+abstract: >-
+  A teacher-led, AI-assisted framework for creating high-quality educational
+  assessment questions from real teaching materials and exporting them to QTI
+  for Inspera and other QTI-compatible platforms. Built as MCP servers plus a
+  standalone QTI 2.2 library, supporting a five-stage methodology (M1-M5) from
+  content analysis through question generation and quality assurance to
+  formatting and export. Scaffolding, not automation: the teacher authors and
+  approves; the tools structure and check.
