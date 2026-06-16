@@ -1,7 +1,7 @@
 {
   "name": "qf-scaffolding",
   "private": true,
-  "version": "0.6.0",
+  "version": "0.1.0",
   "description": "QuestionForge Scaffolding MCP - M1-M4 + M5 Simple methodology guidance",
   "type": "module",
   "main": "build/index.js",
