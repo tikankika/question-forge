@@ -25,8 +25,8 @@ Thank you for your interest in contributing to QuestionForge!
 
 ```bash
 # Clone your fork
-git clone https://github.com/YOUR_USERNAME/QuestionForge.git
-cd QuestionForge
+git clone https://github.com/YOUR_USERNAME/question-forge.git
+cd question-forge
 
 # Create a branch
 git checkout -b feature/your-feature-name
