@@ -9,7 +9,7 @@ import re
 import socket
 from pathlib import Path
 from typing import Optional, Tuple
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 from datetime import datetime
 
 import httpx
@@ -44,6 +44,28 @@ def _is_private_ip(hostname: str) -> bool:
     except (socket.gaierror, ValueError):
         return True  # Block unresolvable hostnames
     return False
+
+
+_REDIRECT_STATUSES = frozenset({301, 302, 303, 307, 308})
+_MAX_REDIRECTS = 5
+
+
+def _validate_fetch_url(url: str) -> Optional[str]:
+    """Validate that a URL is safe to fetch.
+
+    Enforces HTTPS and blocks hosts that resolve to private/reserved/internal
+    addresses (SSRF prevention). Applied to the initial URL and re-applied to
+    every redirect target. Returns an error message, or None if the URL is allowed.
+    """
+    parsed = urlparse(url)
+    if parsed.scheme != 'https':
+        return "Only HTTPS URLs are allowed"
+    if not parsed.hostname:
+        return "Invalid URL: no hostname"
+    if _is_private_ip(parsed.hostname):
+        logger.warning(f"SSRF blocked: {parsed.hostname} resolves to private/reserved IP")
+        return "URL blocked: resolves to a private or internal network address"
+    return None
 
 
 def generate_filename_from_url(url: str, suffix: str = ".md") -> str:
@@ -108,27 +130,40 @@ async def fetch_url_to_markdown(
 
         output_path = output_dir / filename
 
-        # Security: SSRF prevention — block private/internal IPs and non-HTTPS
-        parsed = urlparse(url)
-        if parsed.scheme != 'https':
-            return False, "Only HTTPS URLs are allowed", None
-        if not parsed.hostname:
-            return False, "Invalid URL: no hostname", None
-        if _is_private_ip(parsed.hostname):
-            logger.warning(f"SSRF blocked: {parsed.hostname} resolves to private/reserved IP")
-            return False, "URL blocked: resolves to a private or internal network address", None
+        # Security: SSRF prevention — validate the initial URL (HTTPS + not private/internal)
+        error = _validate_fetch_url(url)
+        if error:
+            return False, error, None
 
         logger.info(f"Fetching URL: {url}")
 
-        # Fetch the URL
+        # Fetch the URL. Redirects are followed MANUALLY so every hop is re-validated:
+        # httpx's automatic follow_redirects would let a public host redirect to an
+        # internal address (e.g. cloud metadata at 169.254.169.254), bypassing the
+        # pre-fetch SSRF check.
         async with httpx.AsyncClient(
             timeout=30.0,
-            follow_redirects=True,
+            follow_redirects=False,
             headers={
                 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) QuestionForge/1.0'
             }
         ) as client:
-            response = await client.get(url)
+            current_url = url
+            for _ in range(_MAX_REDIRECTS + 1):
+                response = await client.get(current_url)
+                if response.status_code in _REDIRECT_STATUSES:
+                    location = response.headers.get('location')
+                    if not location:
+                        break  # malformed redirect; let raise_for_status handle it
+                    current_url = urljoin(current_url, location)
+                    redirect_error = _validate_fetch_url(current_url)
+                    if redirect_error:
+                        logger.warning(f"SSRF blocked on redirect to {current_url}")
+                        return False, f"Redirect blocked: {redirect_error}", None
+                    continue
+                break
+            else:
+                return False, "Too many redirects", None
             response.raise_for_status()
 
         content_type = response.headers.get('content-type', '')

@@ -9,7 +9,43 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-from qf_pipeline.utils.url_fetcher import is_url, _is_private_ip
+from qf_pipeline.utils.url_fetcher import (
+    is_url,
+    _is_private_ip,
+    _validate_fetch_url,
+    fetch_url_to_markdown,
+)
+
+
+class _FakeResponse:
+    """Minimal stand-in for an httpx.Response (offline redirect tests)."""
+
+    def __init__(self, status_code, headers=None, text=""):
+        self.status_code = status_code
+        self.headers = headers or {}
+        self.text = text
+
+    def raise_for_status(self):
+        return None
+
+
+class _FakeClient:
+    """Async-context-manager stand-in for httpx.AsyncClient that returns canned responses."""
+
+    def __init__(self, responses):
+        self._responses = list(responses)
+        self._i = 0
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *exc):
+        return False
+
+    async def get(self, url):
+        response = self._responses[self._i]
+        self._i += 1
+        return response
 
 
 # =============================================================================
@@ -72,6 +108,70 @@ class TestSSRFPrevention:
     def test_unresolvable_hostname_blocked(self):
         """Unresolvable hostnames must be blocked (fail-closed)."""
         assert _is_private_ip("this.hostname.definitely.does.not.exist.invalid") is True
+
+
+class TestSSRFRedirectGuard:
+    """Redirects must be re-validated — the pre-fetch check alone is bypassable."""
+
+    # Public literal IP: _is_private_ip resolves it without DNS, so tests stay offline.
+    PUBLIC_URL = "https://93.184.216.34/"
+
+    @pytest.mark.unit
+    def test_validate_rejects_http(self):
+        assert _validate_fetch_url("http://93.184.216.34/") is not None
+
+    @pytest.mark.unit
+    def test_validate_blocks_metadata_ip(self):
+        assert _validate_fetch_url("https://169.254.169.254/latest/meta-data/") is not None
+
+    @pytest.mark.unit
+    def test_validate_allows_public(self):
+        assert _validate_fetch_url(self.PUBLIC_URL) is None
+
+    @pytest.mark.asyncio
+    async def test_redirect_to_private_ip_blocked(self, tmp_path):
+        """A 302 from a public host to an internal address must be blocked."""
+        client = _FakeClient([
+            _FakeResponse(302, {"location": "https://169.254.169.254/latest/meta-data/"}),
+        ])
+        with patch("qf_pipeline.utils.url_fetcher.httpx.AsyncClient", return_value=client):
+            ok, msg, path = await fetch_url_to_markdown(self.PUBLIC_URL, tmp_path)
+        assert ok is False
+        assert "blocked" in msg.lower()
+        assert path is None
+
+    @pytest.mark.asyncio
+    async def test_redirect_downgrade_to_http_blocked(self, tmp_path):
+        """A redirect downgrading to http must be blocked."""
+        client = _FakeClient([
+            _FakeResponse(301, {"location": "http://93.184.216.34/"}),
+        ])
+        with patch("qf_pipeline.utils.url_fetcher.httpx.AsyncClient", return_value=client):
+            ok, msg, path = await fetch_url_to_markdown(self.PUBLIC_URL, tmp_path)
+        assert ok is False
+        assert "blocked" in msg.lower()
+
+    @pytest.mark.asyncio
+    async def test_too_many_redirects(self, tmp_path):
+        """Endless (otherwise-valid) redirects are capped, not followed forever."""
+        client = _FakeClient([
+            _FakeResponse(302, {"location": self.PUBLIC_URL}) for _ in range(10)
+        ])
+        with patch("qf_pipeline.utils.url_fetcher.httpx.AsyncClient", return_value=client):
+            ok, msg, path = await fetch_url_to_markdown(self.PUBLIC_URL, tmp_path)
+        assert ok is False
+        assert "redirect" in msg.lower()
+
+    @pytest.mark.asyncio
+    async def test_successful_fetch_no_redirect(self, tmp_path):
+        """A normal 200 response is still fetched and written (happy path intact)."""
+        client = _FakeClient([
+            _FakeResponse(200, {"content-type": "text/html"}, "<h1>Hi</h1>"),
+        ])
+        with patch("qf_pipeline.utils.url_fetcher.httpx.AsyncClient", return_value=client):
+            ok, msg, path = await fetch_url_to_markdown(self.PUBLIC_URL, tmp_path)
+        assert ok is True
+        assert path is not None and path.exists()
 
 
 # =============================================================================
