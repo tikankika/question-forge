@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Set, Optional
 from datetime import datetime
 
-from ..xml_utils import escape_xml
+from ..xml_utils import escape_xml, sanitize_identifier
 
 # Template mappings for question types (must match xml_generator.py)
 TEMPLATE_MAPPINGS = {
@@ -103,8 +103,13 @@ class QTIPackager:
             # Write assessmentTest XML if provided (for Question Sets)
             if assessment_test_xml:
                 test_meta = metadata.get('test_metadata', {})
-                test_identifier = test_meta.get('identifier', 'QUIZ_001')
-                assessment_test_path = package_dir / f'ID_{test_identifier}-assessment.xml'
+                test_identifier = sanitize_identifier(test_meta.get('identifier', 'QUIZ_001'))
+                assessment_test_path = (package_dir / f'ID_{test_identifier}-assessment.xml').resolve()
+                # Security: never write outside the package directory.
+                try:
+                    assessment_test_path.relative_to(package_dir.resolve())
+                except ValueError:
+                    raise ValueError("Refusing to write assessment file outside package directory")
                 with open(assessment_test_path, 'w', encoding='utf-8') as f:
                     f.write(assessment_test_xml)
 
@@ -150,9 +155,19 @@ class QTIPackager:
         questions_xml: List[tuple[str, str]]
     ) -> None:
         """Write individual question XML files."""
+        base = package_dir.resolve()
         for identifier, xml_content in questions_xml:
-            filename = f'{identifier}-item.xml'
-            filepath = package_dir / filename
+            filename = f'{sanitize_identifier(identifier)}-item.xml'
+            filepath = (package_dir / filename).resolve()
+
+            # Security: never write outside the package directory (defence in
+            # depth — identifiers are already sanitised at parse time).
+            try:
+                filepath.relative_to(base)
+            except ValueError:
+                raise ValueError(
+                    f"Refusing to write question file outside package directory: {filename!r}"
+                )
 
             with open(filepath, 'w', encoding='utf-8') as f:
                 f.write(xml_content)

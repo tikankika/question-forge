@@ -15,7 +15,59 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.generator.resource_manager import ResourceManager, ResourceIssue
 from src.generator.xml_generator import XMLGenerator
-from src.xml_utils import escape_xml
+from src.xml_utils import escape_xml, sanitize_identifier
+from src.parser.markdown_parser import MarkdownQuizParser
+from src.packager.qti_packager import QTIPackager
+
+
+# =============================================================================
+# Identifier sanitisation — ^identifier flows into XML + filenames
+# =============================================================================
+
+class TestIdentifierSanitization:
+    """The question ^identifier is used unescaped in XML and as a filename;
+    sanitising it at parse time prevents XML injection and path traversal."""
+
+    def test_strips_path_traversal(self):
+        out = sanitize_identifier("../../../tmp/evil")
+        assert "/" not in out and ".." not in out
+
+    def test_strips_xml_breakout(self):
+        out = sanitize_identifier('Q1"/><customInteraction>')
+        for ch in '"<>/':
+            assert ch not in out
+
+    def test_keeps_valid_identifier(self):
+        assert sanitize_identifier("MC_Q-001") == "MC_Q-001"
+
+    def test_empty_falls_back(self):
+        assert sanitize_identifier("") == "ID"
+        assert sanitize_identifier("   ") == "ID"
+
+    def test_parser_sanitizes_identifier(self):
+        """A malicious ^identifier in markdown is sanitised by the parser."""
+        fixture = Path(__file__).parent / "fixtures" / "v65" / "text_entry_numeric.md"
+        md = fixture.read_text(encoding="utf-8").replace(
+            "^identifier TEN_Q001",
+            '^identifier ../../../../tmp/evil"/><x>',
+        )
+        result = MarkdownQuizParser(md).parse()
+        ident = result["questions"][0]["identifier"]
+        for ch in '/"<>':
+            assert ch not in ident
+        assert ".." not in ident
+
+    def test_packager_write_stays_in_package_dir(self, tmp_path):
+        """A traversal identifier cannot make the packager write outside package_dir."""
+        pkg = QTIPackager(output_dir=str(tmp_path))
+        package_dir = tmp_path / "pkg"
+        package_dir.mkdir()
+        sentinel = tmp_path / "evil-item.xml"  # would-be traversal target
+        pkg._write_question_files(package_dir, [("../../../../evil", "<x/>")])
+        assert not sentinel.exists()
+        written = list(package_dir.glob("*-item.xml"))
+        assert len(written) == 1
+        assert written[0].parent.resolve() == package_dir.resolve()
 
 
 # =============================================================================

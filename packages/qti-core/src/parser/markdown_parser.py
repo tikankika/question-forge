@@ -41,7 +41,7 @@ import yaml
 import logging
 from typing import Dict, List, Any, Optional, Tuple
 
-from ..xml_utils import escape_xml
+from ..xml_utils import escape_xml, sanitize_identifier
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -647,9 +647,12 @@ class MarkdownQuizParser:
             fields['question_type'] = type_match.group(1).strip()
 
         # Extract ^identifier (v6.5 format)
+        # Sanitise at parse time: the identifier flows unescaped into XML
+        # attributes (item + manifest) and into the output filename, so restrict
+        # it to a safe token to prevent XML injection and path traversal.
         id_match = re.search(r'^\^identifier\s+(.+)$', header_text, re.MULTILINE)
         if id_match:
-            fields['identifier'] = id_match.group(1).strip()
+            fields['identifier'] = sanitize_identifier(id_match.group(1).strip())
 
         # Extract ^points (v6.5 format)
         points_match = re.search(r'^\^points\s+(.+)$', header_text, re.MULTILINE)
