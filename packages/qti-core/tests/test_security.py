@@ -70,6 +70,39 @@ class TestIdentifierSanitization:
         assert written[0].parent.resolve() == package_dir.resolve()
 
 
+class TestGraphicGapMatchV2Injection:
+    """graphicgapmatch_v2 zone fields flow into XML; coords/identifier must be constrained."""
+
+    def _zones(self, text):
+        return MarkdownQuizParser("")._parse_hotspot_zones(text)
+
+    def test_zone_identifier_sanitized(self):
+        text = (
+            "### Zone 1: Target\n"
+            "**Shape**: rect\n"
+            "**Coordinates**: 0,0,10,10\n"
+            '**Identifier**: Z1"/><associableHotspot identifier="x\n'
+        )
+        zones = self._zones(text)
+        assert zones, "zone should parse"
+        ident = zones[0]["identifier"]
+        for ch in '"<>/ ':
+            assert ch not in ident
+
+    def test_zone_coords_numeric_only(self):
+        text = (
+            "### Zone 1: Target\n"
+            "**Shape**: rect\n"
+            '**Coordinates**: 0,0"/><script>alert(1)</script>\n'
+            "**Identifier**: Z1\n"
+        )
+        zones = self._zones(text)
+        assert zones
+        coords = zones[0]["coords"]
+        assert all(c in "0123456789," for c in coords)
+        assert '"' not in coords and "<" not in coords
+
+
 # =============================================================================
 # Path Traversal — Resource Manager
 # =============================================================================

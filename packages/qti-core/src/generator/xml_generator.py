@@ -1535,7 +1535,7 @@ class XMLGenerator:
             zone_id = zone['identifier']
             shape = zone['shape']
             coords = zone['coords']
-            label = zone.get('label', '')
+            label = self._escape_xml(zone.get('label', ''))
 
             hotspot = f'<associableHotspot coords="{coords}" hotspotLabel="{label}" identifier="{zone_id}" matchMax="1" shape="{shape}"/>'
             hotspots.append(hotspot)

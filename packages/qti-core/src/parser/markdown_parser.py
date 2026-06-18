@@ -2614,7 +2614,9 @@ class MarkdownQuizParser:
                             # Add radius to make x,y,radius
                             coords_str = f"{coord_parts[0].strip()},{coord_parts[1].strip()},{radius_match.group(1)}"
 
-                zone['coords'] = coords_str
+                # Security: coords are interpolated unescaped into an XML attribute.
+                # Keep only digits and commas so a crafted value cannot break out.
+                zone['coords'] = re.sub(r'[^0-9,]', '', coords_str)
             else:
                 logger.warning(f"Zone {zone_num} missing coordinates, skipping")
                 continue
@@ -2622,7 +2624,9 @@ class MarkdownQuizParser:
             # Extract identifier
             identifier_match = re.search(r'\*\*Identifier\*\*:\s*(.+?)(?=\n|$)', zone_text, re.IGNORECASE)
             if identifier_match:
-                zone['identifier'] = identifier_match.group(1).strip()
+                # Security: sanitise — the identifier is used unescaped in XML
+                # attributes and in the mapping/value references.
+                zone['identifier'] = sanitize_identifier(identifier_match.group(1).strip())
             else:
                 zone['identifier'] = f'ZONE_{zone_num}'
 
