@@ -100,6 +100,11 @@ def validate_point_format(question_data: Dict) -> Tuple[bool, str, Optional[int]
     return True, "", None
 
 
+def parse_hashtag_list(value: str) -> List[str]:
+    """Split a space-separated hashtag string (e.g. "#a #b") into bare tokens."""
+    return [token.strip().lstrip('#') for token in value.split() if token.strip()]
+
+
 class MarkdownQuizParser:
     """Parse markdown quiz files into structured data."""
 
@@ -672,7 +677,7 @@ class MarkdownQuizParser:
         if labels_match:
             label_value = labels_match.group(1).strip()
             # Space-separated: "#label1 #label2 #label3"
-            fields['labels'] = [label.strip().lstrip('#') for label in label_value.split() if label.strip()]
+            fields['labels'] = parse_hashtag_list(label_value)
 
         # Extract ^tags and use as labels if ^labels not present
         # ^tags format: "#EXAMPLE_COURSE #topic1 #topic2 #Remember #Easy"
@@ -680,7 +685,7 @@ class MarkdownQuizParser:
         if tags_match:
             tags_value = tags_match.group(1).strip()
             # Parse space-separated hashtags
-            tags_list = [tag.strip().lstrip('#') for tag in tags_value.split() if tag.strip()]
+            tags_list = parse_hashtag_list(tags_value)
             fields['tags'] = tags_list
             # If no ^labels field, use ^tags as labels for Inspera export
             if 'labels' not in fields:
@@ -1367,7 +1372,6 @@ class MarkdownQuizParser:
             # Generate logical name from filename if not provided
             if 'file' in image_data:
                 # Extract filename without extension
-                import os
                 filename = os.path.basename(image_data['file'])
                 logical_name = os.path.splitext(filename)[0]
                 image_data['logical_name'] = logical_name
@@ -1459,7 +1463,6 @@ class MarkdownQuizParser:
         """
         # Check if using x=, y=, width=, height= format and convert to x1,y1,x2,y2
         if 'x=' in coords_str and 'y=' in coords_str:
-            import re
             x_match = re.search(r'x=(\d+)', coords_str)
             y_match = re.search(r'y=(\d+)', coords_str)
 

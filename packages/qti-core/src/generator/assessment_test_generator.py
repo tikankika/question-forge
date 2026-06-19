@@ -26,6 +26,10 @@ from ..xml_utils import escape_xml
 
 logger = logging.getLogger(__name__)
 
+# Known tag categories for auto-categorisation / filtering
+BLOOM_TAGS = {'remember', 'understand', 'apply', 'analyze', 'evaluate', 'create'}
+DIFFICULTY_TAGS = {'easy', 'medium', 'hard'}
+
 
 @dataclass
 class SectionConfig:
@@ -55,12 +59,9 @@ class AssessmentTestGenerator:
     }
 
     def __init__(self):
-        # Register namespaces
+        # Register namespaces (empty prefix registers the default namespace)
         for prefix, uri in self.NAMESPACES.items():
-            if prefix:
-                ET.register_namespace(prefix, uri)
-            else:
-                ET.register_namespace('', uri)
+            ET.register_namespace(prefix, uri)
 
     def generate(
         self,
@@ -170,9 +171,9 @@ class AssessmentTestGenerator:
         """
         filtered = []
 
-        # Define known tag categories
-        bloom_tags = {'remember', 'understand', 'apply', 'analyze', 'evaluate', 'create'}
-        difficulty_tags = {'easy', 'medium', 'hard'}
+        # Known tag categories (module-level constants)
+        bloom_tags = BLOOM_TAGS
+        difficulty_tags = DIFFICULTY_TAGS
 
         for q in questions:
             # Check points filter (OR logic within points)
@@ -261,9 +262,9 @@ def parse_question_set_config(frontmatter: Dict[str, Any]) -> Optional[List[Sect
     if not sections_data:
         return None
 
-    # Define known tag categories for auto-categorization
-    bloom_tags = {'remember', 'understand', 'apply', 'analyze', 'evaluate', 'create'}
-    difficulty_tags = {'easy', 'medium', 'hard'}
+    # Known tag categories (module-level constants)
+    bloom_tags = BLOOM_TAGS
+    difficulty_tags = DIFFICULTY_TAGS
 
     sections = []
     for s in sections_data:
