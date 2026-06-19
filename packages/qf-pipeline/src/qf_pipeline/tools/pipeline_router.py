@@ -405,13 +405,13 @@ async def handle_pipeline_route(arguments: dict) -> dict:
     # If file_path provided, run validation first
     if arguments.get('file_path') and not errors:
         # Import here to avoid circular dependency
-        from .step3_autofix import Step3AutoFixer
+        from .step3_autofix import Step3AutoFix
 
         file_path = arguments['file_path']
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
 
-        fixer = Step3AutoFixer(content)
+        fixer = Step3AutoFix(content)
         validation = fixer._validate()
         errors = validation.get('errors', [])
 
