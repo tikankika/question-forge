@@ -305,11 +305,8 @@ export async function loadStage(input: LoadStageInput): Promise<LoadStageResult>
     );
   }
 
-  // Validate module exists
-  const maxStage = MAX_STAGES[module];
-  if (maxStage === undefined) {
-    const error = `Unknown module '${module}'. Available modules: m1, m2, m3, m4`;
-    // Log tool_end with failure
+  // Log a validation failure (tool_end) and return the error result
+  const fail = (error: string) => {
     if (project_path) {
       logEvent(
         project_path,
@@ -321,31 +318,18 @@ export async function loadStage(input: LoadStageInput): Promise<LoadStageResult>
         Date.now() - startTime
       );
     }
-    return {
-      success: false,
-      error,
-    };
+    return { success: false, error };
+  };
+
+  // Validate module exists
+  const maxStage = MAX_STAGES[module];
+  if (maxStage === undefined) {
+    return fail(`Unknown module '${module}'. Available modules: m1, m2, m3, m4`);
   }
 
   // Validate stage is within range
   if (stage < 0 || stage > maxStage) {
-    const error = `Invalid stage ${stage} for module ${module}. Valid stages: 0-${maxStage}`;
-    // Log tool_end with failure
-    if (project_path) {
-      logEvent(
-        project_path,
-        "",
-        "load_stage",
-        "tool_end",
-        "warn",
-        { success: false, error },
-        Date.now() - startTime
-      );
-    }
-    return {
-      success: false,
-      error,
-    };
+    return fail(`Invalid stage ${stage} for module ${module}. Valid stages: 0-${maxStage}`);
   }
 
   // Get stage info using dynamic lookup
@@ -353,23 +337,7 @@ export async function loadStage(input: LoadStageInput): Promise<LoadStageResult>
   const stageInfo = stages[stage];
 
   if (!stageInfo) {
-    const error = `Stage ${stage} not found in module ${module}`;
-    // Log tool_end with failure
-    if (project_path) {
-      logEvent(
-        project_path,
-        "",
-        "load_stage",
-        "tool_end",
-        "warn",
-        { success: false, error },
-        Date.now() - startTime
-      );
-    }
-    return {
-      success: false,
-      error,
-    };
+    return fail(`Stage ${stage} not found in module ${module}`);
   }
 
   try {
@@ -377,6 +345,19 @@ export async function loadStage(input: LoadStageInput): Promise<LoadStageResult>
     // If project_path is provided, read from project's methodology folder (self-contained project)
     // Otherwise, fall back to QuestionForge source (development/testing only)
     let methodologyPath: string;
+
+    // QuestionForge source fallback (development mode / project file missing).
+    // From build/tools/ -> package root -> QuestionForge root -> methodology/<module>/
+    const sourcePath = join(
+      __dirname,
+      "..",
+      "..",
+      "..",
+      "..",
+      "methodology",
+      module,
+      stageInfo.filename
+    );
 
     if (project_path) {
       // Preferred: Read from project's methodology folder
@@ -393,16 +374,7 @@ export async function loadStage(input: LoadStageInput): Promise<LoadStageResult>
         methodologyPath = projectMethodologyPath;
       } catch {
         // Project methodology not found, fall back to source
-        methodologyPath = join(
-          __dirname,
-          "..",
-          "..",
-          "..",
-          "..",
-          "methodology",
-          module,
-          stageInfo.filename
-        );
+        methodologyPath = sourcePath;
 
         // Log warning about fallback (TIER 1)
         logEvent(
@@ -420,17 +392,7 @@ export async function loadStage(input: LoadStageInput): Promise<LoadStageResult>
       }
     } else {
       // No project_path: use QuestionForge source (development mode)
-      // From build/tools/ -> up to package root -> up to QuestionForge root -> methodology/m1/
-      methodologyPath = join(
-        __dirname,
-        "..",
-        "..",
-        "..",
-        "..",
-        "methodology",
-        module,
-        stageInfo.filename
-      );
+      methodologyPath = sourcePath;
     }
 
     // Read the file
@@ -554,31 +516,6 @@ export async function loadStage(input: LoadStageInput): Promise<LoadStageResult>
  */
 export function getModuleName(module: string): string {
   return MODULE_NAMES[module] || module.toUpperCase();
-}
-
-/**
- * Log stage completion (TIER 2: Session Resumption)
- *
- * Call this when the teacher approves a stage and is ready to move on.
- *
- * @param project_path - Path to the project directory
- * @param module - Module name (m1, m2, m3, m4)
- * @param stage - Stage number
- * @param outputs - Optional outputs produced by this stage
- */
-export function completeStage(
-  project_path: string,
-  module: string,
-  stage: number,
-  outputs?: Record<string, unknown>
-): void {
-  const stages = getStages(module);
-  const stageInfo = stages[stage];
-
-  logStageEvent(project_path, module, stage, "stage_complete", {
-    stage_name: stageInfo?.name || `Stage ${stage}`,
-    outputs: outputs || {},
-  });
 }
 
 /**

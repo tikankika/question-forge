@@ -117,9 +117,8 @@ async def start_session_tool(
                 f"Source: {fetched_from_url}"
             )
 
-            # Clean up temp directory
+            # Clean up temp directory (same path created above for the fetch)
             try:
-                temp_materials = Path(output_folder).resolve() / "_temp_fetched"
                 if temp_materials.exists():
                     import shutil
                     shutil.rmtree(temp_materials)

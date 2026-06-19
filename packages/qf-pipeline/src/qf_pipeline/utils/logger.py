@@ -7,8 +7,9 @@ All logs go to logs/session.jsonl (shared by qf-pipeline and qf-scaffolding).
 import fcntl
 import json
 from pathlib import Path
-from datetime import datetime, timezone
 from typing import Optional, Dict, Any
+
+from .timestamp import get_timestamp
 
 # Schema version per RFC-001
 SCHEMA_VERSION = 1
@@ -110,7 +111,7 @@ def log_event(
 
     # Build log entry per RFC-001 schema
     log_entry = {
-        "ts": datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
+        "ts": get_timestamp(),
         "v": SCHEMA_VERSION,
         "session_id": session_id,
         "mcp": mcp,

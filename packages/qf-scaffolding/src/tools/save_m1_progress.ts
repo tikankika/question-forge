@@ -264,6 +264,9 @@ export async function saveM1Progress(
       body = parsed.body;
     }
 
+    // Single timestamp for this atomic save (stage marker, summary, frontmatter)
+    const now = new Date().toISOString();
+
     // Handle action
     switch (action) {
       case "add_material": {
@@ -324,7 +327,6 @@ export async function saveM1Progress(
 
         const stageNum = stage;
         const stageName = STAGE_NAMES[stageNum] || `Stage ${stageNum}`;
-        const now = new Date().toISOString();
 
         // Mark stage as completed
         if (!frontmatter.stages_completed.includes(stageNum)) {
@@ -387,7 +389,7 @@ ${data.stage_output.content}
         // Add final summary section
         const finalSection = `
 ## M1 Final Summary ✅
-*Finalized: ${new Date().toISOString()}*
+*Finalized: ${now}*
 
 - **Total Materials Analyzed:** ${data.final_summary.total_materials}
 - **Learning Objectives:** ${data.final_summary.learning_objectives_count}
@@ -412,7 +414,7 @@ ${data.final_summary.summary || ""}
     }
 
     // Update frontmatter timestamp
-    frontmatter.updated = new Date().toISOString();
+    frontmatter.updated = now;
 
     // Write updated document
     const newContent = generateFrontmatter(frontmatter) + body;

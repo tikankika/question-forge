@@ -16,12 +16,19 @@ Created: 2025-11-10
 Version: 1.0.0
 """
 
+import os
+import re
+import json
+import shutil
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Inline markdown image pattern: ![alt](path)
+MARKDOWN_IMAGE_RE = re.compile(r'!\[([^\]]*)\]\(([^)]+)\)')
 
 
 @dataclass
@@ -347,9 +354,6 @@ class ResourceManager:
 
             # Generated: quiz_dir/resource_mapping.json
         """
-        import shutil
-        import json
-
         resources_dir = quiz_dir / "resources"
         copied = {}
 
@@ -431,8 +435,6 @@ class ResourceManager:
             resources = rm._extract_resources(question)
             # returns: ["virus_structure.png", "bacteria_cell.png"]
         """
-        import re
-
         resources = []
 
         # 1. Extract from explicit 'image' field
@@ -451,7 +453,7 @@ class ResourceManager:
         # Pattern: ![alt text](filename.png)
         if 'question_text' in question and question['question_text']:
             text = question['question_text']
-            markdown_images = re.findall(r'!\[([^\]]*)\]\(([^)]+)\)', text)
+            markdown_images = MARKDOWN_IMAGE_RE.findall(text)
             for alt, path in markdown_images:
                 if path:
                     resources.append(path)
@@ -465,7 +467,7 @@ class ResourceManager:
             for feedback_type in ['general', 'correct', 'incorrect']:
                 if feedback_type in feedback and feedback[feedback_type]:
                     text = feedback[feedback_type]
-                    markdown_images = re.findall(r'!\[([^\]]*)\]\(([^)]+)\)', text)
+                    markdown_images = MARKDOWN_IMAGE_RE.findall(text)
                     for alt, path in markdown_images:
                         if path:
                             resources.append(path)
@@ -474,7 +476,7 @@ class ResourceManager:
             if 'option_specific' in feedback and isinstance(feedback['option_specific'], dict):
                 for option_id, feedback_text in feedback['option_specific'].items():
                     if feedback_text:
-                        markdown_images = re.findall(r'!\[([^\]]*)\]\(([^)]+)\)', feedback_text)
+                        markdown_images = MARKDOWN_IMAGE_RE.findall(feedback_text)
                         for alt, path in markdown_images:
                             if path:
                                 resources.append(path)
@@ -484,7 +486,7 @@ class ResourceManager:
         if 'premises' in question and question['premises']:
             for premise in question['premises']:
                 if 'text' in premise and premise['text']:
-                    markdown_images = re.findall(r'!\[([^\]]*)\]\(([^)]+)\)', premise['text'])
+                    markdown_images = MARKDOWN_IMAGE_RE.findall(premise['text'])
                     for alt, path in markdown_images:
                         if path:
                             resources.append(path)
@@ -492,7 +494,7 @@ class ResourceManager:
         if 'match_responses' in question and question['match_responses']:
             for response in question['match_responses']:
                 if 'text' in response and response['text']:
-                    markdown_images = re.findall(r'!\[([^\]]*)\]\(([^)]+)\)', response['text'])
+                    markdown_images = MARKDOWN_IMAGE_RE.findall(response['text'])
                     for alt, path in markdown_images:
                         if path:
                             resources.append(path)
@@ -544,9 +546,6 @@ class ResourceManager:
             >>> sanitize_filename("perfect_name.png")
             'perfect_name.png'  # No changes needed
         """
-        import re
-        import os
-
         # Split filename into name and extension
         name, ext = os.path.splitext(filename)
 

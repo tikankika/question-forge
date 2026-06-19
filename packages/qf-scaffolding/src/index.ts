@@ -49,6 +49,17 @@ import {
   m5SimpleStatus,
 } from "./tools/m5_simple_tools.js";
 
+// Render an M5 question block as markdown lines (## header + fenced content)
+function renderBlock(index: number, total: number, content: string): string[] {
+  return [
+    `## Block ${index} av ${total}`,
+    ``,
+    "```markdown",
+    content,
+    "```",
+  ];
+}
+
 // Server version
 const VERSION = "0.6.0"; // Removed complex M5 tools, keeping only m5_simple_* (manual mode)
 
@@ -1010,11 +1021,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         lines.push(``);
         lines.push(`---`);
         lines.push(``);
-        lines.push(`## Block 1 av ${result.total_blocks}`);
-        lines.push(``);
-        lines.push("```markdown");
-        lines.push(result.current_block.content);
-        lines.push("```");
+        lines.push(...renderBlock(1, result.total_blocks, result.current_block.content));
         lines.push(``);
         lines.push(result.instructions);
 
@@ -1092,11 +1099,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         } else if (result.next_block) {
           lines.push(`---`);
           lines.push(``);
-          lines.push(`## Block ${result.next_block.index} av ${result.next_block.total}`);
-          lines.push(``);
-          lines.push("```markdown");
-          lines.push(result.next_block.content);
-          lines.push("```");
+          lines.push(...renderBlock(result.next_block.index, result.next_block.total, result.next_block.content));
         }
 
         return {
@@ -1141,11 +1144,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         } else if (result.next_block) {
           lines.push(`---`);
           lines.push(``);
-          lines.push(`## Block ${result.next_block.index} av ${result.next_block.total}`);
-          lines.push(``);
-          lines.push("```markdown");
-          lines.push(result.next_block.content);
-          lines.push("```");
+          lines.push(...renderBlock(result.next_block.index, result.next_block.total, result.next_block.content));
         }
 
         return {

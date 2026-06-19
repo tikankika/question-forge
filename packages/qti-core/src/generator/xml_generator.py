@@ -306,7 +306,6 @@ class XMLGenerator:
         Returns:
             XML string with all comments removed
         """
-        import re
         # Remove all XML comments (<!-- ... -->)
         # Non-greedy match to handle multiple comments
         return re.sub(r'<!--.*?-->', '', xml, flags=re.DOTALL)
@@ -516,11 +515,8 @@ class XMLGenerator:
 
     def _generate_partial_match_logic(self, options: List[Dict[str, str]], correct_answers: List[str]) -> str:
         """Generate logic to check at least one correct answer is selected."""
-        conditions = []
-        for i, option in enumerate(options):
-            if option['letter'] in correct_answers:
-                conditions.append(f'<member>\n                        <baseValue baseType="identifier">rId{i}</baseValue>\n                        <variable identifier="RESPONSE"/>\n                    </member>')
-        return '\n                    '.join(conditions)
+        # Same member-list construction as the all-correct check.
+        return self._generate_correct_match_logic(options, correct_answers)
 
     def _build_nativehtml_replacements(self, question_data: Dict[str, Any], language: str,
                                        identifier: str, title: str, question_text_xhtml: str) -> Dict[str, str]:
@@ -578,7 +574,6 @@ class XMLGenerator:
         # If file path doesn't start with resources/, add it
         if not image_file.startswith('resources/'):
             # Extract just the filename if it has a path
-            import os
             image_filename = os.path.basename(image_file)
             background_image = f'resources/{image_filename}'
         else:
@@ -964,17 +959,8 @@ class XMLGenerator:
         return '\n                    '.join(checks)
 
     def _generate_text_entry_any_correct_checks(self, blanks: List[Dict[str, Any]]) -> str:
-        """Generate check for at least one correct field."""
-        checks = []
-
-        for blank in blanks:
-            blank_id = blank['identifier']
-            checks.append(f'''<equal toleranceMode="exact">
-                        <variable identifier="isCorrect_{blank_id}"/>
-                        <baseValue baseType="boolean">true</baseValue>
-                    </equal>''')
-
-        return '\n                    '.join(checks)
+        """Generate check for at least one correct field (same per-field equal checks as all-correct)."""
+        return self._generate_text_entry_all_correct_checks(blanks)
 
     # =========================================================================
     # TEXT ENTRY MATH - String-based with inspera:type="math"
@@ -1747,9 +1733,5 @@ class XMLGenerator:
 
     def _generate_inline_choice_any_correct_checks(self, inline_choices: Dict[str, List[str]],
                                                    correct_answers: Dict[str, str]) -> str:
-        """Generate checks for any dropdown being correct."""
-        checks = []
-        for field_num in sorted(inline_choices.keys(), key=int):
-            checks.append(f'<match><variable identifier="RESPONSE-{field_num}"/><correct identifier="RESPONSE-{field_num}"/></match>')
-
-        return '\n                    '.join(checks)
+        """Generate checks for any dropdown being correct (same per-field match list as all-correct)."""
+        return self._generate_inline_choice_all_correct_checks(inline_choices, correct_answers)

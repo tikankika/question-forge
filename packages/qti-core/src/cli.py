@@ -280,7 +280,6 @@ See docs/markdown_specification.md for details.
                             # Add suggestions for common errors
                             if 'Invalid question type' in issue.message:
                                 # Extract the invalid type from message
-                                import re
                                 match = re.search(r'"([^"]+)"', issue.message)
                                 if match:
                                     invalid_type = match.group(1)
