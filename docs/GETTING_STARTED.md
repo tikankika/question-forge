@@ -23,7 +23,7 @@ QuestionForge uses MCP (Model Context Protocol) to integrate with Claude Desktop
 
 ```bash
 git clone https://github.com/tikankika/question-forge.git
-cd QuestionForge
+cd question-forge
 ```
 
 ### Step 2: Install qf-pipeline (Python)
