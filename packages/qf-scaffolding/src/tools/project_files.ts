@@ -10,9 +10,10 @@
 
 import { z } from "zod";
 import { readFile, writeFile, mkdir, stat } from "fs/promises";
-import { join, dirname, normalize, relative, isAbsolute } from "path";
+import { join, dirname } from "path";
 import { existsSync } from "fs";
 import { logEvent, logError } from "../utils/logger.js";
+import { isPathWithinBase } from "../utils/path_security.js";
 
 // ============================================
 // READ PROJECT FILE
@@ -35,22 +36,6 @@ export interface ReadProjectFileResult {
 }
 
 /**
- * Validate that the resolved path is within project_path (prevent path traversal)
- */
-function isPathWithinProject(projectPath: string, targetPath: string): boolean {
-  const normalizedProject = normalize(projectPath);
-  const normalizedTarget = normalize(targetPath);
-  const relativePath = relative(normalizedProject, normalizedTarget);
-
-  // If relative path starts with ".." or is absolute, it's outside project
-  return (
-    !relativePath.startsWith("..") &&
-    !isAbsolute(relativePath) &&
-    relativePath !== ""
-  );
-}
-
-/**
  * Read any file within the project directory
  */
 export async function readProjectFile(
@@ -62,7 +47,7 @@ export async function readProjectFile(
   const fullPath = join(project_path, relative_path);
 
   // Security: Ensure path is within project
-  if (!isPathWithinProject(project_path, fullPath)) {
+  if (!isPathWithinBase(project_path, fullPath)) {
     logError(
       project_path,
       "read_project_file",
@@ -172,7 +157,7 @@ export async function writeProjectFile(
   const fullPath = join(project_path, relative_path);
 
   // Security: Ensure path is within project
-  if (!isPathWithinProject(project_path, fullPath)) {
+  if (!isPathWithinBase(project_path, fullPath)) {
     logError(
       project_path,
       "write_project_file",
