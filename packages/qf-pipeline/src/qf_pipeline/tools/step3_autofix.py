@@ -163,15 +163,11 @@ def load_fix_rules(project_path: Optional[Path]) -> List[FixRule]:
         with open(rules_file, 'r', encoding='utf-8') as f:
             data = json.load(f)
 
-        # Load cached rules and merge with defaults
+        # Load cached rules and merge with defaults. Cached values always win:
+        # learned confidence/counts for default rules, plus custom/graduated rules.
         for rule_data in data.get('rules', []):
             rule = FixRule.from_dict(rule_data)
-            if rule.rule_id in default_rules:
-                # Keep learned confidence/counts from cached rule
-                default_rules[rule.rule_id] = rule
-            else:
-                # Keep custom/graduated rules from cache
-                default_rules[rule.rule_id] = rule
+            default_rules[rule.rule_id] = rule
 
         return list(default_rules.values())
 
@@ -615,7 +611,6 @@ class Step3AutoFix:
             return self._fix_answer_to_correct_answers_global()
 
         # Extract short ID (e.g., "Q002" from "COURSE_B_MR_Q002")
-        import re
         short_id_match = re.search(r'(Q\d+)', question_id)
         short_id = short_id_match.group(1) if short_id_match else question_id
 

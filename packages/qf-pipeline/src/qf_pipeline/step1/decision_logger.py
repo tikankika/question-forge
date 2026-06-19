@@ -12,6 +12,15 @@ from typing import Dict, Any, Optional
 from ..utils.timestamp import get_timestamp
 
 
+def _append_decision(project_path: Path, entry: Dict[str, Any]) -> None:
+    """Append one entry to logs/step1_decisions.jsonl, creating logs/ if needed."""
+    logs_dir = Path(project_path) / "logs"
+    logs_dir.mkdir(parents=True, exist_ok=True)
+    log_file = logs_dir / "step1_decisions.jsonl"
+    with open(log_file, 'a', encoding='utf-8') as f:
+        f.write(json.dumps(entry, ensure_ascii=False) + '\n')
+
+
 def log_decision(
     project_path: Path,
     session_id: str,
@@ -43,11 +52,6 @@ def log_decision(
         pattern_id: Pattern that was used/updated
         time_spent_seconds: Time teacher spent on decision
     """
-    logs_dir = Path(project_path) / "logs"
-    logs_dir.mkdir(parents=True, exist_ok=True)
-
-    log_file = logs_dir / "step1_decisions.jsonl"
-
     entry = {
         "timestamp": get_timestamp(),
         "session_id": session_id,
@@ -62,10 +66,7 @@ def log_decision(
         "pattern_id": pattern_id,
         "time_spent_seconds": time_spent_seconds
     }
-
-    # Append to JSONL file
-    with open(log_file, 'a', encoding='utf-8') as f:
-        f.write(json.dumps(entry, ensure_ascii=False) + '\n')
+    _append_decision(project_path, entry)
 
 
 def log_session_start(
@@ -76,11 +77,6 @@ def log_session_start(
     detected_format: str
 ) -> None:
     """Log session start event."""
-    logs_dir = Path(project_path) / "logs"
-    logs_dir.mkdir(parents=True, exist_ok=True)
-
-    log_file = logs_dir / "step1_decisions.jsonl"
-
     entry = {
         "timestamp": get_timestamp(),
         "session_id": session_id,
@@ -89,9 +85,7 @@ def log_session_start(
         "total_questions": total_questions,
         "detected_format": detected_format
     }
-
-    with open(log_file, 'a', encoding='utf-8') as f:
-        f.write(json.dumps(entry, ensure_ascii=False) + '\n')
+    _append_decision(project_path, entry)
 
 
 def log_session_complete(
@@ -105,11 +99,6 @@ def log_session_complete(
     patterns_updated: int
 ) -> None:
     """Log session completion event."""
-    logs_dir = Path(project_path) / "logs"
-    logs_dir.mkdir(parents=True, exist_ok=True)
-
-    log_file = logs_dir / "step1_decisions.jsonl"
-
     entry = {
         "timestamp": get_timestamp(),
         "session_id": session_id,
@@ -123,9 +112,7 @@ def log_session_complete(
             "patterns_updated": patterns_updated
         }
     }
-
-    with open(log_file, 'a', encoding='utf-8') as f:
-        f.write(json.dumps(entry, ensure_ascii=False) + '\n')
+    _append_decision(project_path, entry)
 
 
 def log_navigation(
@@ -136,11 +123,6 @@ def log_navigation(
     direction: str
 ) -> None:
     """Log navigation between questions."""
-    logs_dir = Path(project_path) / "logs"
-    logs_dir.mkdir(parents=True, exist_ok=True)
-
-    log_file = logs_dir / "step1_decisions.jsonl"
-
     entry = {
         "timestamp": get_timestamp(),
         "session_id": session_id,
@@ -149,6 +131,4 @@ def log_navigation(
         "to_question": to_question,
         "direction": direction
     }
-
-    with open(log_file, 'a', encoding='utf-8') as f:
-        f.write(json.dumps(entry, ensure_ascii=False) + '\n')
+    _append_decision(project_path, entry)

@@ -19,7 +19,6 @@ import logging
 import subprocess
 import time
 import traceback
-from datetime import datetime
 from pathlib import Path
 from typing import List
 
@@ -56,6 +55,9 @@ from .tools import (
 from .utils.logger import log_action, log_event
 
 logger = logging.getLogger(__name__)
+
+# Sibling qti-core package (…/packages/qti-core), used by step2/step4 subprocesses
+QTI_CORE_PATH = Path(__file__).parent.parent.parent.parent / "qti-core"
 
 # Create server instance
 server = Server("qf-pipeline")
@@ -1034,78 +1036,6 @@ async def handle_step0_analyze(arguments: dict) -> List[TextContent]:
 # Step 2: Validator
 # =============================================================================
 
-def format_validation_output(result: dict, file_path: str, question_count: int) -> str:
-    """Format validation result like Terminal QTI-Generator."""
-    lines = [
-        "=" * 60,
-        "QFMD FORMAT VALIDATION REPORT",
-        "=" * 60,
-        "",
-    ]
-
-    issues = result.get("issues", [])
-    error_count = sum(1 for i in issues if i.get("level") == "ERROR")
-    warning_count = sum(1 for i in issues if i.get("level") == "WARNING")
-
-    if not result["valid"]:
-        lines.append("❌ ERRORS FOUND:\n")
-
-        # Group by question
-        by_question = {}
-        for issue in issues:
-            q_num = issue.get("question_num") or 0
-            q_id = issue.get("question_id") or "?"
-            key = (q_num, q_id)
-            if key not in by_question:
-                by_question[key] = []
-            by_question[key].append(issue)
-
-        # Output grouped
-        for (q_num, q_id), q_issues in sorted(by_question.items()):
-            lines.append(f"Question {q_num} ({q_id}):")
-            for issue in q_issues:
-                lines.append(f"  {issue['message']}")
-            lines.append("")
-    else:
-        lines.append("✅ No errors found.\n")
-
-    # Summary
-    valid_count = question_count - len(set(
-        (i.get("question_num"), i.get("question_id"))
-        for i in issues if i.get("level") == "ERROR"
-    ))
-
-    lines.extend([
-        "=" * 60,
-        "SUMMARY",
-        "=" * 60,
-        f"File: {file_path}",
-        f"Total Questions: {question_count}",
-        f"✅ Valid: {valid_count}",
-        f"❌ Errors: {error_count}",
-        f"⚠️  Warnings: {warning_count}",
-        "",
-    ])
-
-    if result["valid"]:
-        lines.extend([
-            "STATUS: ✅ READY FOR QTI GENERATION",
-            "",
-            "=" * 60,
-            "NEXT STEP",
-            "=" * 60,
-            "Validation complete! Proceed to Step 3:",
-            "  → Use step3_decide to choose export type",
-            "  → Or use step4_export to export directly",
-            "",
-            "STOP: Do not run step2_validate again - file is ready.",
-        ])
-    else:
-        lines.append(f"STATUS: ❌ NOT READY - Fix {error_count} error(s) before QTI generation")
-
-    return "\n".join(lines)
-
-
 async def handle_step2_validate(arguments: dict) -> List[TextContent]:
     """
     Handle step2_validate - validate markdown file using subprocess.
@@ -1139,7 +1069,7 @@ async def handle_step2_validate(arguments: dict) -> List[TextContent]:
         session = await _auto_load_session(file_path)
 
     # Path to qti-core
-    qti_core_path = Path(__file__).parent.parent.parent.parent / "qti-core"
+    qti_core_path = QTI_CORE_PATH
     if not qti_core_path.exists():
         return [TextContent(
             type="text",
@@ -1577,7 +1507,7 @@ async def handle_step4_export(arguments: dict) -> List[TextContent]:
     output_name = arguments.get("output_name")
 
     # Path to qti-core
-    qti_core_path = Path(__file__).parent.parent.parent.parent / "qti-core"
+    qti_core_path = QTI_CORE_PATH
     if not qti_core_path.exists():
         return [TextContent(
             type="text",

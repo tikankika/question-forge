@@ -18,6 +18,19 @@ from .session import get_current_session, set_current_session
 
 logger = logging.getLogger(__name__)
 
+
+def _ensure_session(project_path: Path):
+    """Return the current session, loading it from project_path if none is set."""
+    session = get_current_session()
+    if session is None:
+        try:
+            session = SessionManager.load_from_path(project_path)
+            set_current_session(session)
+        except Exception:
+            pass
+    return session
+
+
 # File type detection based on extension
 FILE_TYPE_MAP = {
     # Questions/documents
@@ -185,13 +198,7 @@ async def step0_add_file(
         logger.warning(f"Could not update sources.yaml: {e}")
 
     # Load session if exists
-    session = get_current_session()
-    if session is None:
-        try:
-            session = SessionManager.load_from_path(project_path)
-            set_current_session(session)
-        except Exception:
-            pass
+    session = _ensure_session(project_path)
 
     # Log event
     if session:
@@ -411,13 +418,7 @@ async def step0_analyze(project_path: str) -> Dict[str, Any]:
         }
 
     # Load session for logging
-    session = get_current_session()
-    if session is None:
-        try:
-            session = SessionManager.load_from_path(project_path)
-            set_current_session(session)
-        except Exception:
-            pass
+    session = _ensure_session(project_path)
 
     # Log event
     if session:

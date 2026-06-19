@@ -17,6 +17,15 @@ class ConfigError(Exception):
     pass
 
 
+def _is_listable_md(f: Path) -> bool:
+    """Whether a markdown file should be listed (skip hidden, README, _archive)."""
+    return (
+        not f.name.startswith('.')
+        and 'README' not in f.name
+        and '_archive' not in str(f)
+    )
+
+
 def get_config_path() -> Path:
     """Get path to mqg_folders.json configuration.
 
@@ -91,12 +100,7 @@ def list_projects(include_files: bool = False) -> dict:
         }
 
         if include_files and exists:
-            md_files = [
-                f for f in path.rglob("*.md")
-                if not f.name.startswith('.')
-                and 'README' not in f.name
-                and '_archive' not in str(f)
-            ]
+            md_files = [f for f in path.rglob("*.md") if _is_listable_md(f)]
             project['md_file_count'] = len(md_files)
 
         projects.append(project)
@@ -117,11 +121,7 @@ def get_project_files(project_path: str) -> List[dict]:
 
     files = []
     for md_file in path.rglob("*.md"):
-        if md_file.name.startswith('.'):
-            continue
-        if 'README' in md_file.name:
-            continue
-        if '_archive' in str(md_file):
+        if not _is_listable_md(md_file):
             continue
 
         files.append({

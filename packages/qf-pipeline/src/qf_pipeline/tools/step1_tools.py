@@ -125,8 +125,7 @@ async def step1_manual_fix(
     # Save
     path.write_text(new_file_content, encoding='utf-8')
 
-    # Log decision
-    project_path = _get_project_path(path)
+    # Log decision (project_path already resolved and validated above)
     if project_path:
         log_decision(
             project_path=project_path,
@@ -190,8 +189,7 @@ async def step1_delete(
     # Save
     path.write_text(new_content, encoding='utf-8')
 
-    # Log decision
-    project_path = _get_project_path(path)
+    # Log decision (project_path already resolved and validated above)
     if project_path:
         log_decision(
             project_path=project_path,

@@ -377,10 +377,9 @@ class SessionManager:
                     ignore=ignore_junk
                 )
 
-                # Count files recursively for reporting
-                for item in materials_dest.rglob('*'):
-                    if item.is_file():
-                        materials_copied += 1
+                # Walk the copied tree once: count now, reuse the list below
+                material_files = [p for p in materials_dest.rglob('*') if p.is_file()]
+                materials_copied += len(material_files)
 
                 logger.info(f"Copied {materials_copied} files to materials/")
 
@@ -408,31 +407,30 @@ class SessionManager:
             # Register copied materials in sources.yaml
             if materials_copied > 0:
                 materials_sources = []
-                for item in materials_dest.rglob('*'):
-                    if item.is_file():
-                        ext = item.suffix.lower()
-                        file_type = {
-                            '.pdf': 'lecture_slides',
-                            '.pptx': 'lecture_slides',
-                            '.ppt': 'lecture_slides',
-                            '.docx': 'document',
-                            '.doc': 'document',
-                            '.txt': 'text',
-                            '.md': 'markdown',
-                            '.mp4': 'video',
-                            '.mp3': 'audio',
-                            '.wav': 'audio',
-                        }.get(ext, 'unknown')
+                for item in material_files:
+                    ext = item.suffix.lower()
+                    file_type = {
+                        '.pdf': 'lecture_slides',
+                        '.pptx': 'lecture_slides',
+                        '.ppt': 'lecture_slides',
+                        '.docx': 'document',
+                        '.doc': 'document',
+                        '.txt': 'text',
+                        '.md': 'markdown',
+                        '.mp4': 'video',
+                        '.mp3': 'audio',
+                        '.wav': 'audio',
+                    }.get(ext, 'unknown')
 
-                        materials_sources.append({
-                            "path": f"materials/{item.relative_to(materials_dest)}",
-                            "type": file_type,
-                            "location": "local",
-                            "metadata": {
-                                "original_path": str(materials_src / item.relative_to(materials_dest)),
-                                "copied_at": get_timestamp(),
-                            }
-                        })
+                    materials_sources.append({
+                        "path": f"materials/{item.relative_to(materials_dest)}",
+                        "type": file_type,
+                        "location": "local",
+                        "metadata": {
+                            "original_path": str(materials_src / item.relative_to(materials_dest)),
+                            "copied_at": get_timestamp(),
+                        }
+                    })
 
                 if materials_sources:
                     result = update_sources_yaml(
