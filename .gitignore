@@ -70,3 +70,6 @@ coverage/
 .claude/
 .mcp.json
 CLAUDE.md
+
+# Internal working notes (not for public repo — see internal-docs-boundary rule)
+_internal/
