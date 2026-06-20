@@ -39,6 +39,7 @@ import os
 import re
 import yaml
 import logging
+from dataclasses import dataclass
 from typing import Dict, List, Any, Optional, Tuple
 
 from ..xml_utils import escape_xml, sanitize_identifier
@@ -46,6 +47,73 @@ from ..xml_utils import escape_xml, sanitize_identifier
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class RequiredField:
+    """A required ^field header and the messages for each failure branch."""
+    name: str
+    value_pattern: str            # capture group, e.g. r"(\S+)" or r"(\d+)"
+    not_at_start_message: str
+    not_at_start_suggestion: str
+    colon_suggestion: str
+    missing_suggestion: str
+    capture: bool = False         # if True, a successful match becomes the question id
+
+
+# Required header fields, validated in order by MarkdownQuizParser.validate().
+REQUIRED_HEADER_FIELDS = [
+    RequiredField(
+        name="type",
+        value_pattern=r"(\S+)",
+        not_at_start_message="^type not at start of line - each metadata field must be on its own line",
+        not_at_start_suggestion="Put ^type on its own line",
+        colon_suggestion="Remove the colon: ^type multiple_choice_single",
+        missing_suggestion="Add: ^type multiple_choice_single (or other valid type)",
+    ),
+    RequiredField(
+        name="identifier",
+        value_pattern=r"(\S+)",
+        not_at_start_message="^identifier not at start of line",
+        not_at_start_suggestion="Put ^identifier on its own line",
+        colon_suggestion="Remove the colon: ^identifier Q001",
+        missing_suggestion="Add: ^identifier Q001",
+        capture=True,
+    ),
+    RequiredField(
+        name="points",
+        value_pattern=r"(\d+)",
+        not_at_start_message="^points not at start of line or invalid value",
+        not_at_start_suggestion="Put ^points on its own line with integer value: ^points 1",
+        colon_suggestion="Remove the colon: ^points 1",
+        missing_suggestion="Add: ^points 1",
+    ),
+]
+
+
+def check_required_field(
+    field: RequiredField, header_section: str
+) -> Tuple[Optional[Dict[str, str]], Optional[str]]:
+    """Validate one required ^field in a question header.
+
+    Returns (error, captured): `error` is an error dict (field/message/suggestion)
+    or None when the field is present and well-formed; `captured` is the matched
+    value when `field.capture` is set, else None.
+    """
+    match = re.search(rf'^\^{field.name}\s+{field.value_pattern}', header_section, re.MULTILINE)
+    if match:
+        return None, (match.group(1).strip() if field.capture else None)
+
+    if re.search(rf'^\^{field.name}:', header_section, re.MULTILINE):
+        message = f'^{field.name} has colon - QFMD v6.5 uses "^{field.name} value" not "^{field.name}: value"'
+        suggestion = field.colon_suggestion
+    elif re.search(rf'\^{field.name}', header_section):
+        message = field.not_at_start_message
+        suggestion = field.not_at_start_suggestion
+    else:
+        message = f'Missing ^{field.name} field'
+        suggestion = field.missing_suggestion
+    return {'field': field.name, 'message': message, 'suggestion': suggestion}, None
 
 
 def validate_match_question_points(question_data: Dict) -> Tuple[bool, str, Optional[int]]:
@@ -195,75 +263,14 @@ class MarkdownQuizParser:
             # Get header section (before @field:)
             header_section = block.split('\n@field:')[0] if '\n@field:' in block else block
 
-            # Validate ^type - MUST be at start of line (v6.5: ^key value format, NO colon)
-            type_match = re.search(r'^\^type\s+(\S+)', header_section, re.MULTILINE)
-            if not type_match:
-                # Check for common format errors
-                if re.search(r'^\^type:', header_section, re.MULTILINE):
-                    # Specific error for colon format (common mistake)
-                    q_errors.append({
-                        'field': 'type',
-                        'message': '^type has colon - QFMD v6.5 uses "^type value" not "^type: value"',
-                        'suggestion': 'Remove the colon: ^type multiple_choice_single'
-                    })
-                elif re.search(r'\^type', header_section):
-                    q_errors.append({
-                        'field': 'type',
-                        'message': '^type not at start of line - each metadata field must be on its own line',
-                        'suggestion': 'Put ^type on its own line'
-                    })
-                else:
-                    q_errors.append({
-                        'field': 'type',
-                        'message': 'Missing ^type field',
-                        'suggestion': 'Add: ^type multiple_choice_single (or other valid type)'
-                    })
-
-            # Validate ^identifier - MUST be at start of line (v6.5: ^key value format, NO colon)
-            id_match = re.search(r'^\^identifier\s+(\S+)', header_section, re.MULTILINE)
-            if not id_match:
-                if re.search(r'^\^identifier:', header_section, re.MULTILINE):
-                    q_errors.append({
-                        'field': 'identifier',
-                        'message': '^identifier has colon - QFMD v6.5 uses "^identifier value" not "^identifier: value"',
-                        'suggestion': 'Remove the colon: ^identifier Q001'
-                    })
-                elif re.search(r'\^identifier', header_section):
-                    q_errors.append({
-                        'field': 'identifier',
-                        'message': '^identifier not at start of line',
-                        'suggestion': 'Put ^identifier on its own line'
-                    })
-                else:
-                    q_errors.append({
-                        'field': 'identifier',
-                        'message': 'Missing ^identifier field',
-                        'suggestion': 'Add: ^identifier Q001'
-                    })
-            else:
-                q_id = id_match.group(1).strip()
-
-            # Validate ^points - MUST be at start of line (v6.5: ^key value format, NO colon)
-            points_match = re.search(r'^\^points\s+(\d+)', header_section, re.MULTILINE)
-            if not points_match:
-                if re.search(r'^\^points:', header_section, re.MULTILINE):
-                    q_errors.append({
-                        'field': 'points',
-                        'message': '^points has colon - QFMD v6.5 uses "^points value" not "^points: value"',
-                        'suggestion': 'Remove the colon: ^points 1'
-                    })
-                elif re.search(r'\^points', header_section):
-                    q_errors.append({
-                        'field': 'points',
-                        'message': '^points not at start of line or invalid value',
-                        'suggestion': 'Put ^points on its own line with integer value: ^points 1'
-                    })
-                else:
-                    q_errors.append({
-                        'field': 'points',
-                        'message': 'Missing ^points field',
-                        'suggestion': 'Add: ^points 1'
-                    })
+            # Validate required header fields (^type / ^identifier / ^points)
+            # MUST be at start of line (v6.5: ^key value format, NO colon).
+            for required in REQUIRED_HEADER_FIELDS:
+                error, captured = check_required_field(required, header_section)
+                if error:
+                    q_errors.append(error)
+                elif captured is not None:
+                    q_id = captured
 
             # Add errors with question context
             for err in q_errors:
