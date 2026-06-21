@@ -12,11 +12,25 @@
  */
 
 import { z } from "zod";
+import { existsSync } from "fs";
 import { readFile, readdir, stat } from "fs/promises";
-import { join, extname } from "path";
+import { join, extname, basename } from "path";
 import { PDFParse } from "pdf-parse";
 import { logEvent, logError } from "../utils/logger.js";
 import { isPathWithinBase } from "../utils/path_security.js";
+import {
+  detectCourseRoot,
+  listCourseMaterials,
+  classifyCourseFile,
+  listCurriculum,
+  classifyCurriculumFile,
+} from "../utils/course_vault.js";
+import type { CourseMaterial } from "../utils/course_vault.js";
+
+/** Prefix that identifies a course-vault file in shared mode (read in place). */
+const COURSE_PREFIX = "course:";
+/** Prefix for curriculum docs (Läroplan) at the vault root, above the course. */
+const CURRICULUM_PREFIX = "curriculum:";
 
 // Input schema for read_materials tool
 export const readMaterialsSchema = z.object({
@@ -33,6 +47,9 @@ export interface FileInfo {
   filename: string;
   size_bytes: number;
   content_type: "pdf" | "md" | "txt" | "pptx" | "other";
+  /** "project" = <project>/materials/; "course" = read-in-place from the
+   * course vault (filename is prefixed `course:`). Absent ⇒ project (legacy). */
+  source?: "project" | "course";
 }
 
 // Material info type (for read mode - with content)
@@ -82,6 +99,22 @@ function getContentType(filename: string): MaterialInfo["content_type"] {
       return "pptx";
     default:
       return "other";
+  }
+}
+
+/** Append course/curriculum materials as prefixed, source-tagged list entries. */
+function addCourseEntries(
+  files: FileInfo[],
+  items: CourseMaterial[],
+  prefix: string
+): void {
+  for (const item of items) {
+    files.push({
+      filename: prefix + item.relPath,
+      size_bytes: item.size_bytes,
+      content_type: item.content_type,
+      source: "course",
+    });
   }
 }
 
@@ -155,6 +188,106 @@ async function readMaterial(
   return material;
 }
 
+/** Read an already-validated vault file and build the success result + log. */
+async function emitRead(
+  projectPath: string,
+  absPath: string,
+  displayName: string,
+  filename: string,
+  source: "course" | "curriculum",
+  extractText: boolean,
+  startTime: number
+): Promise<ReadMaterialsResult> {
+  const material = await readMaterial(absPath, displayName, extractText);
+  const totalChars = material.text_content?.length ?? 0;
+  logEvent(
+    projectPath,
+    "",
+    "read_materials",
+    "tool_end",
+    "info",
+    { success: true, mode: "read", filename, source, total_chars: totalChars },
+    Date.now() - startTime
+  );
+  return { success: true, mode: "read", material, total_files: 1, total_chars: totalChars };
+}
+
+/**
+ * Read an allowlisted course-vault file in place (shared mode). The course path
+ * is validated by classifyCourseFile (default-deny: traversal, Data/ raw, and
+ * unsafe roles are rejected), so no file outside the safe zones is read.
+ */
+async function readCourseFile(
+  projectPath: string,
+  courseRoot: string | null,
+  filename: string,
+  extractText: boolean,
+  startTime: number
+): Promise<ReadMaterialsResult> {
+  if (!courseRoot) {
+    return {
+      success: false,
+      mode: "read",
+      total_files: 0,
+      error: "Not inside a course vault — 'course:' paths require shared mode",
+    };
+  }
+
+  const rel = filename.slice(COURSE_PREFIX.length);
+  const abs = join(courseRoot, rel);
+
+  const decision = await classifyCourseFile(courseRoot, abs);
+  if (!decision.admit) {
+    return {
+      success: false,
+      mode: "read",
+      total_files: 0,
+      error: `Allowlist error: "${rel}" is not readable (${decision.reason})`,
+    };
+  }
+
+  try {
+    await stat(abs);
+  } catch {
+    return { success: false, mode: "read", total_files: 0, error: `File not found: ${rel}` };
+  }
+
+  return emitRead(projectPath, abs, basename(rel), filename, "course", extractText, startTime);
+}
+
+/**
+ * Read a curriculum document (Läroplan/styrdokument) from the vault root in place.
+ * Validated by classifyCurriculumFile (top-level vault-root filename only,
+ * curriculum name pattern, must exist) — no traversal, no sibling-course reads.
+ */
+async function readCurriculumFile(
+  projectPath: string,
+  courseRoot: string | null,
+  filename: string,
+  extractText: boolean,
+  startTime: number
+): Promise<ReadMaterialsResult> {
+  if (!courseRoot) {
+    return {
+      success: false,
+      mode: "read",
+      total_files: 0,
+      error: "Not inside a course vault — 'curriculum:' paths require shared mode",
+    };
+  }
+  const name = filename.slice(CURRICULUM_PREFIX.length);
+  const decision = classifyCurriculumFile(courseRoot, name);
+  if (!decision.admit || !decision.absPath) {
+    return {
+      success: false,
+      mode: "read",
+      total_files: 0,
+      error: `Curriculum not readable: "${name}" (${decision.reason})`,
+    };
+  }
+  return emitRead(projectPath, decision.absPath, basename(name), filename, "curriculum", extractText, startTime);
+}
+
 /**
  * Read instructional materials from project's materials/ folder
  *
@@ -163,7 +296,7 @@ async function readMaterial(
  * - filename="X.pdf": Read and extract text from ONE specific file
  */
 export async function readMaterials(
-  input: ReadMaterialsInput
+  input: z.input<typeof readMaterialsSchema>
 ): Promise<ReadMaterialsResult> {
   const { project_path, filename, file_pattern, extract_text = true } = input;
   const startTime = Date.now();
@@ -181,12 +314,22 @@ export async function readMaterials(
   });
 
   const materialsPath = join(project_path, "materials");
+  const courseRoot = detectCourseRoot(project_path);
 
   try {
-    // Check if materials folder exists
-    try {
-      await stat(materialsPath);
-    } catch {
+    // Shared course-vault mode: read an allowlisted course file in place.
+    if (!isListMode && filename && filename.startsWith(COURSE_PREFIX)) {
+      return await readCourseFile(project_path, courseRoot, filename, extract_text, startTime);
+    }
+    // Shared mode: read a curriculum doc (Läroplan) from the vault root in place.
+    if (!isListMode && filename && filename.startsWith(CURRICULUM_PREFIX)) {
+      return await readCurriculumFile(project_path, courseRoot, filename, extract_text, startTime);
+    }
+
+    // Project materials/ folder. Standalone: it must exist. Shared mode: a
+    // missing folder is fine — course material is read in place instead.
+    const haveProjectMaterials = existsSync(materialsPath);
+    if (!haveProjectMaterials && !courseRoot) {
       const error = `Materials folder not found: ${materialsPath}`;
       logEvent(
         project_path,
@@ -202,9 +345,9 @@ export async function readMaterials(
 
     // ========== LIST MODE ==========
     if (isListMode) {
-      const allFiles = await readdir(materialsPath);
       const files: FileInfo[] = [];
 
+      const allFiles = haveProjectMaterials ? await readdir(materialsPath) : [];
       for (const fname of allFiles) {
         const filePath = join(materialsPath, fname);
         const fileStats = await stat(filePath);
@@ -219,7 +362,16 @@ export async function readMaterials(
           filename: fname,
           size_bytes: fileStats.size,
           content_type: getContentType(fname),
+          source: "project",
         });
+      }
+
+      // Shared mode: also surface allowlisted course material (read in place,
+      // no copy). Entries are `course:`-prefixed and marked source "course".
+      if (courseRoot) {
+        addCourseEntries(files, await listCourseMaterials(courseRoot), COURSE_PREFIX);
+        // Curriculum (Läroplan) at the vault root, above the course folder.
+        addCourseEntries(files, await listCurriculum(courseRoot), CURRICULUM_PREFIX);
       }
 
       // Sort by filename
