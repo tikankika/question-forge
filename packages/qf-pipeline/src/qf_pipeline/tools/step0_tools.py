@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional
 from ..utils.session_manager import SessionManager, ENTRY_POINT_REQUIREMENTS
 from ..utils.sources import update_sources_yaml
 from ..utils.logger import log_event
+from ..utils.course_vault import detect_course_root
 from .session import get_current_session, set_current_session
 
 logger = logging.getLogger(__name__)
@@ -135,6 +136,63 @@ async def step0_add_file(
     # Determine target folder
     file_ext = source.suffix.lower()
     detected_type = detect_file_type(source)
+
+    # Shared course-vault mode (ADR_qf_ts_material_flow Decision 5): if the file
+    # already lives INSIDE the course vault, reference it in place — no copy.
+    # (read_materials reads it on the spot.) Files outside the vault copy as usual.
+    course_root = detect_course_root(str(project))
+    if course_root:
+        try:
+            rel_to_vault = source.relative_to(Path(course_root).resolve()).as_posix()
+        except ValueError:
+            rel_to_vault = None  # outside the vault → copy as usual (below)
+        if rel_to_vault is not None:
+            source_entry = {
+                "path": rel_to_vault,
+                "type": file_type if file_type != "auto" else detected_type,
+                "location": "in_place",
+                "metadata": {
+                    "original_path": str(source),
+                    "added_by": "step0_add_file",
+                    "course_root": course_root,
+                },
+            }
+            try:
+                update_sources_yaml(
+                    project,
+                    [source_entry],
+                    updated_by="qf-pipeline:step0_add_file",
+                    append=True,
+                )
+            except Exception as e:
+                logger.warning(f"Could not update sources.yaml: {e}")
+
+            session = _ensure_session(project_path)
+            if session:
+                log_event(
+                    project_path=project,
+                    session_id=session.session_id,
+                    tool="step0_add_file",
+                    event="file_referenced",
+                    level="info",
+                    data={"source": str(source), "reference": rel_to_vault, "location": "in_place"},
+                )
+
+            return {
+                "success": True,
+                "file_added": {
+                    "original": str(source),
+                    "referenced": rel_to_vault,
+                    "file_type": detected_type,
+                    "location": "in_place",
+                },
+                "needs_conversion": needs_conversion(source),
+                "is_resource": is_resource_file(source),
+                "message": (
+                    f"Referenced in place (already in course vault, not copied): {rel_to_vault}"
+                ),
+                "next_step": "Run step0_analyze() to get recommended workflow.",
+            }
 
     if target_folder == "auto":
         if is_resource_file(source):
