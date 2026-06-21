@@ -12,11 +12,20 @@
  */
 
 import { z } from "zod";
+import { existsSync } from "fs";
 import { readFile, readdir, stat } from "fs/promises";
-import { join, extname } from "path";
+import { join, extname, basename } from "path";
 import { PDFParse } from "pdf-parse";
 import { logEvent, logError } from "../utils/logger.js";
 import { isPathWithinBase } from "../utils/path_security.js";
+import {
+  detectCourseRoot,
+  listCourseMaterials,
+  classifyCourseFile,
+} from "../utils/course_vault.js";
+
+/** Prefix that identifies a course-vault file in shared mode (read in place). */
+const COURSE_PREFIX = "course:";
 
 // Input schema for read_materials tool
 export const readMaterialsSchema = z.object({
@@ -33,6 +42,9 @@ export interface FileInfo {
   filename: string;
   size_bytes: number;
   content_type: "pdf" | "md" | "txt" | "pptx" | "other";
+  /** "project" = <project>/materials/; "course" = read-in-place from the
+   * course vault (filename is prefixed `course:`). Absent ⇒ project (legacy). */
+  source?: "project" | "course";
 }
 
 // Material info type (for read mode - with content)
@@ -156,6 +168,60 @@ async function readMaterial(
 }
 
 /**
+ * Read an allowlisted course-vault file in place (shared mode). The course path
+ * is validated by classifyCourseFile (default-deny: traversal, Data/ raw, and
+ * unsafe roles are rejected), so no file outside the safe zones is read.
+ */
+async function readCourseFile(
+  projectPath: string,
+  courseRoot: string | null,
+  filename: string,
+  extractText: boolean,
+  startTime: number
+): Promise<ReadMaterialsResult> {
+  if (!courseRoot) {
+    return {
+      success: false,
+      mode: "read",
+      total_files: 0,
+      error: "Not inside a course vault — 'course:' paths require shared mode",
+    };
+  }
+
+  const rel = filename.slice(COURSE_PREFIX.length);
+  const abs = join(courseRoot, rel);
+
+  const decision = await classifyCourseFile(courseRoot, abs);
+  if (!decision.admit) {
+    return {
+      success: false,
+      mode: "read",
+      total_files: 0,
+      error: `Allowlist error: "${rel}" is not readable (${decision.reason})`,
+    };
+  }
+
+  try {
+    await stat(abs);
+  } catch {
+    return { success: false, mode: "read", total_files: 0, error: `File not found: ${rel}` };
+  }
+
+  const material = await readMaterial(abs, basename(rel), extractText);
+  const totalChars = material.text_content?.length ?? 0;
+  logEvent(
+    projectPath,
+    "",
+    "read_materials",
+    "tool_end",
+    "info",
+    { success: true, mode: "read", filename, source: "course", total_chars: totalChars },
+    Date.now() - startTime
+  );
+  return { success: true, mode: "read", material, total_files: 1, total_chars: totalChars };
+}
+
+/**
  * Read instructional materials from project's materials/ folder
  *
  * Two modes:
@@ -163,7 +229,7 @@ async function readMaterial(
  * - filename="X.pdf": Read and extract text from ONE specific file
  */
 export async function readMaterials(
-  input: ReadMaterialsInput
+  input: z.input<typeof readMaterialsSchema>
 ): Promise<ReadMaterialsResult> {
   const { project_path, filename, file_pattern, extract_text = true } = input;
   const startTime = Date.now();
@@ -181,12 +247,18 @@ export async function readMaterials(
   });
 
   const materialsPath = join(project_path, "materials");
+  const courseRoot = detectCourseRoot(project_path);
 
   try {
-    // Check if materials folder exists
-    try {
-      await stat(materialsPath);
-    } catch {
+    // Shared course-vault mode: read an allowlisted course file in place.
+    if (!isListMode && filename && filename.startsWith(COURSE_PREFIX)) {
+      return await readCourseFile(project_path, courseRoot, filename, extract_text, startTime);
+    }
+
+    // Project materials/ folder. Standalone: it must exist. Shared mode: a
+    // missing folder is fine — course material is read in place instead.
+    const haveProjectMaterials = existsSync(materialsPath);
+    if (!haveProjectMaterials && !courseRoot) {
       const error = `Materials folder not found: ${materialsPath}`;
       logEvent(
         project_path,
@@ -202,9 +274,9 @@ export async function readMaterials(
 
     // ========== LIST MODE ==========
     if (isListMode) {
-      const allFiles = await readdir(materialsPath);
       const files: FileInfo[] = [];
 
+      const allFiles = haveProjectMaterials ? await readdir(materialsPath) : [];
       for (const fname of allFiles) {
         const filePath = join(materialsPath, fname);
         const fileStats = await stat(filePath);
@@ -219,7 +291,21 @@ export async function readMaterials(
           filename: fname,
           size_bytes: fileStats.size,
           content_type: getContentType(fname),
+          source: "project",
         });
+      }
+
+      // Shared mode: also surface allowlisted course material (read in place,
+      // no copy). Entries are `course:`-prefixed and marked source "course".
+      if (courseRoot) {
+        for (const cm of await listCourseMaterials(courseRoot)) {
+          files.push({
+            filename: COURSE_PREFIX + cm.relPath,
+            size_bytes: cm.size_bytes,
+            content_type: cm.content_type,
+            source: "course",
+          });
+        }
       }
 
       // Sort by filename
