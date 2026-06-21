@@ -6,10 +6,14 @@ vault is copied as before (location:"local").
 """
 
 import asyncio
+from pathlib import Path
 
 import yaml
 
+import qf_pipeline.utils.session_manager as sm
 from qf_pipeline.tools.step0_tools import step0_add_file
+
+_SKIP_METHODOLOGY = lambda: {"action": "skipped", "message": "test", "files_copied": 0}
 
 
 def _make_vault(tmp_path):
@@ -72,3 +76,48 @@ def test_standalone_project_copies_as_before(tmp_path):
 
     assert res["success"] is True
     assert (project / "materials" / "src.md").exists()
+
+
+def test_create_session_skips_copytree_in_vault(tmp_path, monkeypatch):
+    monkeypatch.setattr(sm, "ensure_central_methodology", _SKIP_METHODOLOGY)
+    course = tmp_path / "Courses" / "Biologi" / "BIOG200x"
+    course.mkdir(parents=True)
+    (course / "project_state.json").write_text("{}")
+    mats = course / "Material" / "Klart"
+    mats.mkdir(parents=True)
+    (mats / "foto.md").write_text("# taught")
+    outdir = course / "Exams" / "Formativa"
+    outdir.mkdir(parents=True)
+
+    res = sm.SessionManager().create_session(
+        output_folder=str(outdir),
+        entry_point="m1",
+        materials_folder=str(course / "Material"),
+        project_name="q1",
+    )
+
+    assert res["success"], res
+    proj = Path(res["project_path"])
+    # bulk copy skipped — material is read in place from the vault
+    assert not (proj / "materials" / "Klart" / "foto.md").exists()
+    assert not (proj / "materials" / "foto.md").exists()
+
+
+def test_create_session_copies_when_standalone(tmp_path, monkeypatch):
+    monkeypatch.setattr(sm, "ensure_central_methodology", _SKIP_METHODOLOGY)
+    outdir = tmp_path / "work"
+    outdir.mkdir()
+    mats = tmp_path / "ext_materials"
+    mats.mkdir()
+    (mats / "a.md").write_text("x")
+
+    res = sm.SessionManager().create_session(
+        output_folder=str(outdir),
+        entry_point="m1",
+        materials_folder=str(mats),
+        project_name="p1",
+    )
+
+    assert res["success"], res
+    proj = Path(res["project_path"])
+    assert (proj / "materials" / "a.md").exists()
