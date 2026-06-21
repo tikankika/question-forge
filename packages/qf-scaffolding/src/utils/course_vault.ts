@@ -215,3 +215,75 @@ export async function listCourseMaterials(courseRoot: string): Promise<CourseMat
   out.sort((a, b) => a.relPath.localeCompare(b.relPath));
   return out;
 }
+
+// ── Curriculum (Läroplan / styrdokument) at the vault root ─────────────────────
+// These live in the Obsidian vault root, above the course folder, so they use a
+// separate `curriculum:` addressing rather than under-course `course:` paths.
+
+/** Curriculum document name pattern (national curriculum / governing docs). */
+export const CURRICULUM_PATTERN = /(l[äa]roplan|curriculum|styrdokument)/i;
+const CURRICULUM_EXTS = new Set([".pdf", ".md", ".txt"]);
+
+/** Walk up from the course root to the Obsidian vault root (the dir holding
+ * `.obsidian/`). Bounded; returns null if no vault root is found. */
+export function detectVaultRoot(courseRoot: string, maxDepth = 6): string | null {
+  const home = resolve(homedir());
+  let dir = resolve(courseRoot);
+  for (let i = 0; i <= maxDepth; i++) {
+    if (existsSync(join(dir, ".obsidian"))) return dir;
+    if (dir === home) break;
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return null;
+}
+
+/** List curriculum documents at the vault root (top-level only — never recurses
+ * into sibling course folders). relPath is the bare filename. */
+export async function listCurriculum(courseRoot: string): Promise<CourseMaterial[]> {
+  const vaultRoot = detectVaultRoot(courseRoot);
+  if (!vaultRoot) return [];
+  let entries;
+  try {
+    entries = await readdir(vaultRoot, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+  const out: CourseMaterial[] = [];
+  for (const entry of entries) {
+    if (!entry.isFile()) continue; // top-level files only
+    if (!CURRICULUM_PATTERN.test(entry.name)) continue;
+    if (!CURRICULUM_EXTS.has(extname(entry.name).toLowerCase())) continue;
+    const abs = join(vaultRoot, entry.name);
+    out.push({
+      relPath: entry.name,
+      content_type: courseContentType(entry.name),
+      size_bytes: (await stat(abs)).size,
+    });
+  }
+  out.sort((a, b) => a.relPath.localeCompare(b.relPath));
+  return out;
+}
+
+export interface CurriculumDecision {
+  admit: boolean;
+  absPath?: string;
+  reason: string;
+}
+
+/** Validate a requested curriculum file (a bare vault-root filename). Rejects
+ * path separators/traversal, non-curriculum names, and missing files. */
+export function classifyCurriculumFile(courseRoot: string, name: string): CurriculumDecision {
+  if (name.includes("/") || name.includes("\\") || name.includes("..")) {
+    return { admit: false, reason: "curriculum must be a top-level vault-root filename" };
+  }
+  if (!CURRICULUM_PATTERN.test(name) || !CURRICULUM_EXTS.has(extname(name).toLowerCase())) {
+    return { admit: false, reason: "not a curriculum document" };
+  }
+  const vaultRoot = detectVaultRoot(courseRoot);
+  if (!vaultRoot) return { admit: false, reason: "no vault root" };
+  const abs = join(vaultRoot, name);
+  if (!existsSync(abs)) return { admit: false, reason: "not found" };
+  return { admit: true, absPath: abs, reason: "curriculum" };
+}

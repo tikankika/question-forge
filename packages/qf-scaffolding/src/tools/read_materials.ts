@@ -22,10 +22,14 @@ import {
   detectCourseRoot,
   listCourseMaterials,
   classifyCourseFile,
+  listCurriculum,
+  classifyCurriculumFile,
 } from "../utils/course_vault.js";
 
 /** Prefix that identifies a course-vault file in shared mode (read in place). */
 const COURSE_PREFIX = "course:";
+/** Prefix for curriculum docs (Läroplan) at the vault root, above the course. */
+const CURRICULUM_PREFIX = "curriculum:";
 
 // Input schema for read_materials tool
 export const readMaterialsSchema = z.object({
@@ -222,6 +226,50 @@ async function readCourseFile(
 }
 
 /**
+ * Read a curriculum document (Läroplan/styrdokument) from the vault root in place.
+ * Validated by classifyCurriculumFile (top-level vault-root filename only,
+ * curriculum name pattern, must exist) — no traversal, no sibling-course reads.
+ */
+async function readCurriculumFile(
+  projectPath: string,
+  courseRoot: string | null,
+  filename: string,
+  extractText: boolean,
+  startTime: number
+): Promise<ReadMaterialsResult> {
+  if (!courseRoot) {
+    return {
+      success: false,
+      mode: "read",
+      total_files: 0,
+      error: "Not inside a course vault — 'curriculum:' paths require shared mode",
+    };
+  }
+  const name = filename.slice(CURRICULUM_PREFIX.length);
+  const decision = classifyCurriculumFile(courseRoot, name);
+  if (!decision.admit || !decision.absPath) {
+    return {
+      success: false,
+      mode: "read",
+      total_files: 0,
+      error: `Curriculum not readable: "${name}" (${decision.reason})`,
+    };
+  }
+  const material = await readMaterial(decision.absPath, basename(name), extractText);
+  const totalChars = material.text_content?.length ?? 0;
+  logEvent(
+    projectPath,
+    "",
+    "read_materials",
+    "tool_end",
+    "info",
+    { success: true, mode: "read", filename, source: "curriculum", total_chars: totalChars },
+    Date.now() - startTime
+  );
+  return { success: true, mode: "read", material, total_files: 1, total_chars: totalChars };
+}
+
+/**
  * Read instructional materials from project's materials/ folder
  *
  * Two modes:
@@ -253,6 +301,10 @@ export async function readMaterials(
     // Shared course-vault mode: read an allowlisted course file in place.
     if (!isListMode && filename && filename.startsWith(COURSE_PREFIX)) {
       return await readCourseFile(project_path, courseRoot, filename, extract_text, startTime);
+    }
+    // Shared mode: read a curriculum doc (Läroplan) from the vault root in place.
+    if (!isListMode && filename && filename.startsWith(CURRICULUM_PREFIX)) {
+      return await readCurriculumFile(project_path, courseRoot, filename, extract_text, startTime);
     }
 
     // Project materials/ folder. Standalone: it must exist. Shared mode: a
@@ -303,6 +355,15 @@ export async function readMaterials(
             filename: COURSE_PREFIX + cm.relPath,
             size_bytes: cm.size_bytes,
             content_type: cm.content_type,
+            source: "course",
+          });
+        }
+        // Curriculum (Läroplan) at the vault root, above the course folder.
+        for (const c of await listCurriculum(courseRoot)) {
+          files.push({
+            filename: CURRICULUM_PREFIX + c.relPath,
+            size_bytes: c.size_bytes,
+            content_type: c.content_type,
             source: "course",
           });
         }
