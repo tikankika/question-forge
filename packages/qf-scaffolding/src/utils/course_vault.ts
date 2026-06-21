@@ -9,7 +9,8 @@
  */
 
 import { existsSync, readFileSync } from "fs";
-import { basename, dirname, join, relative, resolve } from "path";
+import { readdir, stat } from "fs/promises";
+import { basename, dirname, extname, join, relative, resolve } from "path";
 import { homedir } from "os";
 
 /** The teaching-suite course-folder marker. Present in both older and newer
@@ -142,4 +143,75 @@ export async function classifyCourseFile(
 
   // 4. Default-deny.
   return { admit: false, reason: "default-deny (not in an allowed zone)" };
+}
+
+// ── Course material listing ────────────────────────────────────────────────
+
+export type CourseContentType = "pdf" | "md" | "txt" | "pptx" | "other";
+
+export interface CourseMaterial {
+  /** POSIX path relative to the course root. */
+  relPath: string;
+  content_type: CourseContentType;
+  size_bytes: number;
+}
+
+/** Zones that may contain admittable files — we only walk these, never the
+ * whole vault (cheaper, and avoids touching process/student folders at all). */
+const CANDIDATE_ZONES = [...SAFE_ZONES, ...ROLE_GATED_ZONES, TRANSCRIPT_ZONE];
+
+function courseContentType(name: string): CourseContentType {
+  switch (extname(name).toLowerCase()) {
+    case ".pdf":
+      return "pdf";
+    case ".md":
+      return "md";
+    case ".txt":
+      return "txt";
+    case ".pptx":
+      return "pptx";
+    default:
+      return "other";
+  }
+}
+
+/**
+ * Recursively list the allowlisted course materials under `courseRoot`.
+ * Walks only the candidate zones and admits each file via classifyCourseFile,
+ * so denied files (raw transcripts, student data, process notes) never appear.
+ * Symlinks are skipped (defense-in-depth against escaping the vault).
+ */
+export async function listCourseMaterials(courseRoot: string): Promise<CourseMaterial[]> {
+  const out: CourseMaterial[] = [];
+
+  async function walk(dir: string): Promise<void> {
+    let entries;
+    try {
+      entries = await readdir(dir, { withFileTypes: true });
+    } catch {
+      return; // zone absent in this vault
+    }
+    for (const entry of entries) {
+      const abs = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        await walk(abs);
+      } else if (entry.isFile()) {
+        const decision = await classifyCourseFile(courseRoot, abs);
+        if (!decision.admit) continue;
+        const rel = relUnder(courseRoot, abs);
+        if (rel === null) continue;
+        out.push({
+          relPath: rel,
+          content_type: courseContentType(entry.name),
+          size_bytes: (await stat(abs)).size,
+        });
+      }
+    }
+  }
+
+  for (const zone of CANDIDATE_ZONES) {
+    await walk(join(courseRoot, zone));
+  }
+  out.sort((a, b) => a.relPath.localeCompare(b.relPath));
+  return out;
 }
