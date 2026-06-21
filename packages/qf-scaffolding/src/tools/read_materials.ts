@@ -25,6 +25,7 @@ import {
   listCurriculum,
   classifyCurriculumFile,
 } from "../utils/course_vault.js";
+import type { CourseMaterial } from "../utils/course_vault.js";
 
 /** Prefix that identifies a course-vault file in shared mode (read in place). */
 const COURSE_PREFIX = "course:";
@@ -101,6 +102,22 @@ function getContentType(filename: string): MaterialInfo["content_type"] {
   }
 }
 
+/** Append course/curriculum materials as prefixed, source-tagged list entries. */
+function addCourseEntries(
+  files: FileInfo[],
+  items: CourseMaterial[],
+  prefix: string
+): void {
+  for (const item of items) {
+    files.push({
+      filename: prefix + item.relPath,
+      size_bytes: item.size_bytes,
+      content_type: item.content_type,
+      source: "course",
+    });
+  }
+}
+
 /**
  * Check if filename matches pattern
  * Supports simple glob patterns: *.pdf, lecture*, *analysis*
@@ -171,6 +188,30 @@ async function readMaterial(
   return material;
 }
 
+/** Read an already-validated vault file and build the success result + log. */
+async function emitRead(
+  projectPath: string,
+  absPath: string,
+  displayName: string,
+  filename: string,
+  source: "course" | "curriculum",
+  extractText: boolean,
+  startTime: number
+): Promise<ReadMaterialsResult> {
+  const material = await readMaterial(absPath, displayName, extractText);
+  const totalChars = material.text_content?.length ?? 0;
+  logEvent(
+    projectPath,
+    "",
+    "read_materials",
+    "tool_end",
+    "info",
+    { success: true, mode: "read", filename, source, total_chars: totalChars },
+    Date.now() - startTime
+  );
+  return { success: true, mode: "read", material, total_files: 1, total_chars: totalChars };
+}
+
 /**
  * Read an allowlisted course-vault file in place (shared mode). The course path
  * is validated by classifyCourseFile (default-deny: traversal, Data/ raw, and
@@ -211,18 +252,7 @@ async function readCourseFile(
     return { success: false, mode: "read", total_files: 0, error: `File not found: ${rel}` };
   }
 
-  const material = await readMaterial(abs, basename(rel), extractText);
-  const totalChars = material.text_content?.length ?? 0;
-  logEvent(
-    projectPath,
-    "",
-    "read_materials",
-    "tool_end",
-    "info",
-    { success: true, mode: "read", filename, source: "course", total_chars: totalChars },
-    Date.now() - startTime
-  );
-  return { success: true, mode: "read", material, total_files: 1, total_chars: totalChars };
+  return emitRead(projectPath, abs, basename(rel), filename, "course", extractText, startTime);
 }
 
 /**
@@ -255,18 +285,7 @@ async function readCurriculumFile(
       error: `Curriculum not readable: "${name}" (${decision.reason})`,
     };
   }
-  const material = await readMaterial(decision.absPath, basename(name), extractText);
-  const totalChars = material.text_content?.length ?? 0;
-  logEvent(
-    projectPath,
-    "",
-    "read_materials",
-    "tool_end",
-    "info",
-    { success: true, mode: "read", filename, source: "curriculum", total_chars: totalChars },
-    Date.now() - startTime
-  );
-  return { success: true, mode: "read", material, total_files: 1, total_chars: totalChars };
+  return emitRead(projectPath, decision.absPath, basename(name), filename, "curriculum", extractText, startTime);
 }
 
 /**
@@ -350,23 +369,9 @@ export async function readMaterials(
       // Shared mode: also surface allowlisted course material (read in place,
       // no copy). Entries are `course:`-prefixed and marked source "course".
       if (courseRoot) {
-        for (const cm of await listCourseMaterials(courseRoot)) {
-          files.push({
-            filename: COURSE_PREFIX + cm.relPath,
-            size_bytes: cm.size_bytes,
-            content_type: cm.content_type,
-            source: "course",
-          });
-        }
+        addCourseEntries(files, await listCourseMaterials(courseRoot), COURSE_PREFIX);
         // Curriculum (Läroplan) at the vault root, above the course folder.
-        for (const c of await listCurriculum(courseRoot)) {
-          files.push({
-            filename: CURRICULUM_PREFIX + c.relPath,
-            size_bytes: c.size_bytes,
-            content_type: c.content_type,
-            source: "course",
-          });
-        }
+        addCourseEntries(files, await listCurriculum(courseRoot), CURRICULUM_PREFIX);
       }
 
       // Sort by filename

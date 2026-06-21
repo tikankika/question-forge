@@ -24,18 +24,28 @@ export const COURSE_MARKER = "project_state.json";
  * Bounded: never treats the home directory or above as a course root, stops at
  * the filesystem root, and never walks more than `maxDepth` levels up.
  */
-export function detectCourseRoot(projectPath: string, maxDepth = 8): string | null {
+/** Walk up from `startPath` returning the first ancestor satisfying `hasMarker`.
+ * Bounded: never returns the home directory or above, stops at the filesystem
+ * root, and never walks more than `maxDepth` levels up. */
+function walkUpFor(
+  startPath: string,
+  hasMarker: (dir: string) => boolean,
+  maxDepth: number
+): string | null {
   const home = resolve(homedir());
-  let dir = resolve(projectPath);
-
+  let dir = resolve(startPath);
   for (let i = 0; i <= maxDepth; i++) {
-    if (dir === home) break; // never treat home (or above) as a course root
-    if (existsSync(join(dir, COURSE_MARKER))) return dir;
+    if (dir === home) break; // never treat home (or above) as a root
+    if (hasMarker(dir)) return dir;
     const parent = dirname(dir);
     if (parent === dir) break; // filesystem root
     dir = parent;
   }
   return null;
+}
+
+export function detectCourseRoot(projectPath: string, maxDepth = 8): string | null {
+  return walkUpFor(projectPath, (dir) => existsSync(join(dir, COURSE_MARKER)), maxDepth);
 }
 
 // ── Material allowlist (ADR_qf_ts_material_flow, consolidated step-2 rule) ──────
@@ -179,7 +189,7 @@ function courseContentType(name: string): CourseContentType {
  * Recursively list the allowlisted course materials under `courseRoot`.
  * Walks only the candidate zones and admits each file via classifyCourseFile,
  * so denied files (raw transcripts, student data, process notes) never appear.
- * Symlinks are skipped (defense-in-depth against escaping the vault).
+ * Symlinks are skipped (defence-in-depth against escaping the vault).
  */
 export async function listCourseMaterials(courseRoot: string): Promise<CourseMaterial[]> {
   const out: CourseMaterial[] = [];
@@ -227,16 +237,7 @@ const CURRICULUM_EXTS = new Set([".pdf", ".md", ".txt"]);
 /** Walk up from the course root to the Obsidian vault root (the dir holding
  * `.obsidian/`). Bounded; returns null if no vault root is found. */
 export function detectVaultRoot(courseRoot: string, maxDepth = 6): string | null {
-  const home = resolve(homedir());
-  let dir = resolve(courseRoot);
-  for (let i = 0; i <= maxDepth; i++) {
-    if (existsSync(join(dir, ".obsidian"))) return dir;
-    if (dir === home) break;
-    const parent = dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
-  return null;
+  return walkUpFor(courseRoot, (dir) => existsSync(join(dir, ".obsidian")), maxDepth);
 }
 
 /** List curriculum documents at the vault root (top-level only — never recurses
