@@ -576,7 +576,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         content: [
           {
             type: "text",
-            text: `Validation error: ${errorMessage}`,
+            text: `Error: ${errorMessage}`,
           },
         ],
         isError: true,
@@ -627,7 +627,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         content: [
           {
             type: "text",
-            text: `Validation error: ${errorMessage}`,
+            text: `Error: ${errorMessage}`,
           },
         ],
         isError: true,
@@ -712,7 +712,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         content: [
           {
             type: "text",
-            text: `Validation error: ${errorMessage}`,
+            text: `Error: ${errorMessage}`,
           },
         ],
         isError: true,
@@ -777,7 +777,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         content: [
           {
             type: "text",
-            text: `Validation error: ${errorMessage}`,
+            text: `Error: ${errorMessage}`,
           },
         ],
         isError: true,
@@ -841,7 +841,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         content: [
           {
             type: "text",
-            text: `Validation error: ${errorMessage}`,
+            text: `Error: ${errorMessage}`,
           },
         ],
         isError: true,
@@ -895,7 +895,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         content: [
           {
             type: "text",
-            text: `Validation error: ${errorMessage}`,
+            text: `Error: ${errorMessage}`,
           },
         ],
         isError: true,
@@ -945,7 +945,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         content: [
           {
             type: "text",
-            text: `Validation error: ${errorMessage}`,
+            text: `Error: ${errorMessage}`,
           },
         ],
         isError: true,
@@ -994,7 +994,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         content: [
           {
             type: "text",
-            text: `Validation error: ${errorMessage}`,
+            text: `Error: ${errorMessage}`,
           },
         ],
         isError: true,
