@@ -16,7 +16,7 @@ from .methodology import ensure_central_methodology
 from .sources import create_empty_sources_yaml, update_sources_yaml
 from .logger import log_event
 from .timestamp import get_timestamp
-from .course_vault import detect_course_root
+from .course_vault import detect_course_root, course_relpath
 
 logger = logging.getLogger(__name__)
 
@@ -354,13 +354,7 @@ class SessionManager:
                 # skip the bulk copy when the materials folder is INSIDE the course
                 # vault — QF reads it in place. Outside the vault → copy as before.
                 course_root = detect_course_root(str(project_path))
-                in_vault = False
-                if course_root:
-                    try:
-                        materials_src.resolve().relative_to(Path(course_root).resolve())
-                        in_vault = True
-                    except ValueError:
-                        in_vault = False
+                in_vault = bool(course_root) and course_relpath(materials_src, course_root) is not None
 
                 if in_vault:
                     logger.info(

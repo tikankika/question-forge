@@ -39,3 +39,17 @@ def detect_course_root(project_path: str, max_depth: int = 8) -> Optional[str]:
         current = parent
 
     return None
+
+
+def course_relpath(path, course_root: str) -> Optional[str]:
+    """POSIX path of ``path`` relative to ``course_root``, or ``None`` when
+    ``path`` lies outside the course vault.
+
+    The single in-vault test shared by the copy-shutdown call sites (the
+    pipeline's ``step0_add_file`` and ``create_session``): an inside-vault file
+    is referenced in place; an outside file is copied.
+    """
+    try:
+        return Path(path).resolve().relative_to(Path(course_root).resolve()).as_posix()
+    except ValueError:
+        return None

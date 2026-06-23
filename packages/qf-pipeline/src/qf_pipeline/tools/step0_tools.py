@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Optional
 from ..utils.session_manager import SessionManager, ENTRY_POINT_REQUIREMENTS
 from ..utils.sources import update_sources_yaml
 from ..utils.logger import log_event
-from ..utils.course_vault import detect_course_root
+from ..utils.course_vault import detect_course_root, course_relpath
 from .session import get_current_session, set_current_session
 
 logger = logging.getLogger(__name__)
@@ -134,7 +134,6 @@ async def step0_add_file(
         }
 
     # Determine target folder
-    file_ext = source.suffix.lower()
     detected_type = detect_file_type(source)
 
     # Shared course-vault mode (ADR_qf_ts_material_flow Decision 5): if the file
@@ -142,10 +141,7 @@ async def step0_add_file(
     # (read_materials reads it on the spot.) Files outside the vault copy as usual.
     course_root = detect_course_root(str(project))
     if course_root:
-        try:
-            rel_to_vault = source.relative_to(Path(course_root).resolve()).as_posix()
-        except ValueError:
-            rel_to_vault = None  # outside the vault → copy as usual (below)
+        rel_to_vault = course_relpath(source, course_root)
         if rel_to_vault is not None:
             source_entry = {
                 "path": rel_to_vault,

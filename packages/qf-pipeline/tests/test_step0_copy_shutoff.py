@@ -12,6 +12,7 @@ import yaml
 
 import qf_pipeline.utils.session_manager as sm
 from qf_pipeline.tools.step0_tools import step0_add_file
+from qf_pipeline.server import handle_step0_add_file
 
 _SKIP_METHODOLOGY = lambda: {"action": "skipped", "message": "test", "files_copied": 0}
 
@@ -50,6 +51,25 @@ def test_in_vault_file_is_referenced_not_copied(tmp_path):
         e.get("location") == "in_place" and e.get("path") == "Material/Klart/foto.md"
         for e in (entries if isinstance(entries, list) else [])
     )
+
+
+def test_server_formats_in_place_reference(tmp_path):
+    """handle_step0_add_file must surface the reference path, not 'Copied to: None'."""
+    course, project = _make_vault(tmp_path)
+    material = course / "Material" / "Klart" / "foto.md"
+    material.parent.mkdir(parents=True)
+    material.write_text("# x")
+
+    out = asyncio.run(
+        handle_step0_add_file(
+            {"project_path": str(project), "file_path": str(material), "file_type": "materials"}
+        )
+    )
+    text = out[0].text
+
+    assert "Referenced in place:" in text
+    assert "Material/Klart/foto.md" in text
+    assert "Copied to: None" not in text
 
 
 def test_outside_file_is_copied_as_before(tmp_path):
