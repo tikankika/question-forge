@@ -921,11 +921,17 @@ async def handle_step0_add_file(arguments: dict) -> List[TextContent]:
 
     if result.get("success"):
         file_info = result.get("file_added", {})
+        # Shared vault mode references the file in place (no copy); show the
+        # reference path instead of a misleading "Copied to: None".
+        if file_info.get("location") == "in_place":
+            placement = f"Referenced in place: {file_info.get('referenced')}"
+        else:
+            placement = f"Copied to: {file_info.get('copied_to')}"
         lines = [
             "FILE ADDED",
             "",
             f"Original: {file_info.get('original')}",
-            f"Copied to: {file_info.get('copied_to')}",
+            placement,
             f"File type: {file_info.get('file_type')}",
             "",
         ]
