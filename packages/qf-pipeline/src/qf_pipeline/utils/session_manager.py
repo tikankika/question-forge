@@ -16,6 +16,7 @@ from .methodology import ensure_central_methodology
 from .sources import create_empty_sources_yaml, update_sources_yaml
 from .logger import log_event
 from .timestamp import get_timestamp
+from .course_vault import detect_course_root, course_relpath
 
 logger = logging.getLogger(__name__)
 
@@ -349,40 +350,52 @@ class SessionManager:
                 materials_src = Path(materials_folder)
                 materials_dest = project_path / "materials"
 
-                logger.info(f"Copying materials from {materials_src} to {materials_dest}")
+                # Shared course-vault mode (ADR_qf_ts_material_flow Decision 5):
+                # skip the bulk copy when the materials folder is INSIDE the course
+                # vault — QF reads it in place. Outside the vault → copy as before.
+                course_root = detect_course_root(str(project_path))
+                in_vault = bool(course_root) and course_relpath(materials_src, course_root) is not None
 
-                # Define junk files to ignore
-                def ignore_junk(directory, files):
-                    """Ignore junk files and hidden files."""
-                    ignored = []
-                    for f in files:
-                        # Ignore hidden files (except .md files which might be intentional)
-                        if f.startswith('.') and not f.endswith('.md'):
-                            ignored.append(f)
-                        # Ignore OS junk
-                        elif f in ('Thumbs.db', 'desktop.ini', 'ehthumbs.db'):
-                            ignored.append(f)
-                        # Ignore Office temp files
-                        elif f.startswith('~$'):
-                            ignored.append(f)
-                        # Ignore Python cache
-                        elif f == '__pycache__' or f.endswith('.pyc'):
-                            ignored.append(f)
-                    return ignored
+                if in_vault:
+                    logger.info(
+                        f"Shared vault mode: not copying {materials_src} "
+                        f"(read in place from course root {course_root})"
+                    )
+                else:
+                    logger.info(f"Copying materials from {materials_src} to {materials_dest}")
 
-                # Copy entire tree (including subdirectories)
-                shutil.copytree(
-                    materials_src,
-                    materials_dest,
-                    dirs_exist_ok=True,  # Merge with existing (materials/ already exists)
-                    ignore=ignore_junk
-                )
+                    # Define junk files to ignore
+                    def ignore_junk(directory, files):
+                        """Ignore junk files and hidden files."""
+                        ignored = []
+                        for f in files:
+                            # Ignore hidden files (except .md files which might be intentional)
+                            if f.startswith('.') and not f.endswith('.md'):
+                                ignored.append(f)
+                            # Ignore OS junk
+                            elif f in ('Thumbs.db', 'desktop.ini', 'ehthumbs.db'):
+                                ignored.append(f)
+                            # Ignore Office temp files
+                            elif f.startswith('~$'):
+                                ignored.append(f)
+                            # Ignore Python cache
+                            elif f == '__pycache__' or f.endswith('.pyc'):
+                                ignored.append(f)
+                        return ignored
 
-                # Walk the copied tree once: count now, reuse the list below
-                material_files = [p for p in materials_dest.rglob('*') if p.is_file()]
-                materials_copied += len(material_files)
+                    # Copy entire tree (including subdirectories)
+                    shutil.copytree(
+                        materials_src,
+                        materials_dest,
+                        dirs_exist_ok=True,  # Merge with existing (materials/ already exists)
+                        ignore=ignore_junk
+                    )
 
-                logger.info(f"Copied {materials_copied} files to materials/")
+                    # Walk the copied tree once: count now, reuse the list below
+                    material_files = [p for p in materials_dest.rglob('*') if p.is_file()]
+                    materials_copied += len(material_files)
+
+                    logger.info(f"Copied {materials_copied} files to materials/")
 
             # ADR-016: ensure the central methodology snapshot exists at
             # <QF_WORKSPACE>/methodology/ (shared across all course projects).
