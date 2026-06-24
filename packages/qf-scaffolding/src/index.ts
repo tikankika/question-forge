@@ -172,9 +172,13 @@ const TOOLS: Tool[] = [
   {
     name: "read_materials",
     description:
-      `⚠️ PRIMÄRT för att LISTA filer i materials/ (filename=null). ` +
+      `⚠️ PRIMÄRT för att LISTA material (filename=null). ` +
       `För PDF-analys: Be användaren LADDA UPP filen till chatten istället - Claude.ai har bättre PDF-läsning! ` +
-      `Read mode (filename="X.pdf") är endast FALLBACK om användaren inte kan ladda upp.`,
+      `Read mode (filename="X.pdf") är endast FALLBACK om användaren inte kan ladda upp. ` +
+      `DELAT LÄGE (auto): körs QF-projektet i en teaching-suite-kursmapp listas även kursens ` +
+      `material PÅ PLATS (ingen kopiering) — poster med prefixet "course:<sökväg>" (Lesson_Plans, ` +
+      `Styrdokument, Material, anonymiserade transkript) och "curriculum:<fil>" (Läroplan). ` +
+      `Läs en sådan med filename satt till exakt det prefixade namnet.`,
     inputSchema: {
       type: "object",
       properties: {
@@ -186,7 +190,8 @@ const TOOLS: Tool[] = [
           type: ["string", "null"],
           description:
             "null/omit = LIST mode (returnerar filnamn). " +
-            "'X.pdf' = READ mode (FALLBACK - be användaren ladda upp istället!).",
+            "'X.pdf' = READ mode från projektets materials/ (FALLBACK - be användaren ladda upp istället!). " +
+            "'course:<sökväg>' eller 'curriculum:<fil>' = READ kursmaterial PÅ PLATS i delat läge (precis som det listades).",
         },
         file_pattern: {
           type: "string",
