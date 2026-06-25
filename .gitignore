@@ -66,15 +66,9 @@ coverage/
 .env.local
 *.local
 
-# ACDM config — gitignored (local / path-sensitive). EXCEPT the repo-policy rules
-# below, which describe the repo / are read by repo-tooling and must travel with a
-# clone (ADR-015 "protection travels with the repo"). Process rules + acdm.json +
-# .mcp.json + CLAUDE.md stay ignored.
-.claude/*
-!.claude/rules/
-.claude/rules/*
-!.claude/rules/data-protection.md
-!.claude/rules/internal-docs-boundary.md
-!.claude/rules/publish-readiness.md
+# Local Claude Code / ACDM dev-tooling — kept out of the public artifact.
+# .claude/ holds agent rules + local config, not contributor-facing content; the
+# public data-protection policy lives in SECURITY.md instead (ACDM ADR 017).
+.claude/
 .mcp.json
 CLAUDE.md
