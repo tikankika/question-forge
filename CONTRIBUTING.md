@@ -2,9 +2,27 @@
 
 Thank you for your interest in contributing to QuestionForge!
 
-## How to Contribute
+## Critical rules — data protection
 
-### Reporting Bugs
+QuestionForge reads real teaching materials (lectures, slides, course documents).
+This is a public repository — never let real personal data into the repo, in code,
+tests, comments, documentation, examples or commit messages. Git history is permanent.
+
+- **Never commit real personal data:** names (students, colleagues, teachers),
+  school or institution names, identifying places, personal-identity numbers, file
+  paths containing a username (`/Users/...`), secrets (API keys, tokens, `.env`),
+  and real course materials that identify people or institutions.
+- **Use fabricated or anonymised data in every example and test** — for example
+  `School A`, `Colleague_A`, `/path/to/project`, a fake course code.
+- **Watch quasi-identifiers:** a class plus a date plus a subject can identify a
+  student even with no name attached.
+- **Already committed something real?** Deleting the file is not enough — it stays
+  in the git history forever. Stop, scrub the history, rotate any exposed secret,
+  and escalate before the next push.
+
+## How to contribute
+
+### Reporting bugs
 
 1. Check if the bug is already reported in [Issues](https://github.com/tikankika/question-forge/issues)
 2. If not, create a new issue with:
@@ -13,15 +31,15 @@ Thank you for your interest in contributing to QuestionForge!
    - Expected vs actual behaviour
    - Environment (OS, Python/Node version, Claude Desktop version)
 
-### Suggesting Features
+### Suggesting features
 
 1. Open an issue with the `enhancement` label
 2. Describe the use case and proposed solution
 3. Reference relevant ADRs or RFCs if applicable
 
-### Code Contributions
+### Code contributions
 
-#### Setup Development Environment
+#### Setup development environment
 
 ```bash
 # Clone your fork
@@ -39,7 +57,7 @@ cd ../qf-scaffolding
 npm install
 ```
 
-#### Development Workflow
+#### Development workflow
 
 1. **Check existing ADRs** in `docs/adr/` for architectural context
 2. **Create RFC** for significant changes (see `docs/rfcs/` for examples)
@@ -47,7 +65,7 @@ npm install
 4. **Follow code style** (see below)
 5. **Update documentation** if needed
 
-#### Code Style
+#### Code style
 
 **Python (qf-pipeline, qti-core):**
 - Follow PEP 8
@@ -59,7 +77,7 @@ npm install
 - Explicit types (avoid `any`)
 - JSDoc for public functions
 
-#### Commit Messages
+#### Commit messages
 
 Follow conventional commits:
 
@@ -74,7 +92,7 @@ refactor(step3): simplify fix rule matching
 
 Types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
 
-#### Pull Request Process
+#### Pull request process
 
 1. Update documentation if needed
 2. Add tests for new functionality
@@ -82,7 +100,7 @@ Types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
 4. Reference related issues in PR description
 5. Request review
 
-### Documentation Contributions
+### Documentation contributions
 
 Documentation improvements are always welcome:
 
@@ -91,7 +109,7 @@ Documentation improvements are always welcome:
 - Improve getting started guide
 - Translate to other languages
 
-## Architecture Overview
+## Architecture overview
 
 Before contributing code, familiarise yourself with:
 
@@ -106,9 +124,9 @@ Before contributing code, familiarise yourself with:
 - **Discussions**: Questions and ideas
 - **Pull Requests**: Code contributions
 
-## License
+## Licence
 
-By contributing, you agree that your contributions will be licensed under PolyForm Noncommercial 1.0.0.
+By contributing, you agree that your contributions will be licensed under PolyForm Noncommercial 1.0.0 (see [LICENSE](LICENSE)).
 
 ---
 

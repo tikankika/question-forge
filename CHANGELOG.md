@@ -5,6 +5,17 @@ All notable changes to QuestionForge are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **README — a "Development status" section** (the honest maturity framing the sibling suites carry) and a **Support** section.
+
+### Changed
+
+- **CONTRIBUTING — sentence-case headings and a standardised licence line.**
+- **SECURITY — vulnerability reporting standardised** to GitHub's private vulnerability reporting link, with an aligned supported-versions table and a response-time expectation.
+
 ## [0.1.0] — First public release
 
 First public release of QuestionForge: a teacher-led, AI-assisted framework for
@@ -23,4 +34,5 @@ exporting them to QTI.
 - Methodology guides (M1–M5) and a question-format reference.
 - Getting-started and workflow documentation.
 
+[Unreleased]: https://github.com/tikankika/question-forge/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/tikankika/question-forge/releases/tag/v0.1.0
