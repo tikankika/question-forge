@@ -30,19 +30,26 @@ You can expect an acknowledgement within a week, and responsible disclosure is a
 
 ## Data protection
 
-This is a public repository. QuestionForge works with a teacher's exam material
-in local project directories — none of that material belongs here. Git history
-is permanent, so the rules below apply to code, tests, examples, documentation
-and commit messages alike.
+QuestionForge processes real teaching materials (lectures, slides, course
+documents) and produces exam questions, and this is a public repository. One
+rule is non-negotiable: **no real personal data may ever enter the repo** — in
+code, tests, examples, documentation or commit messages, anywhere in the
+working tree or its git history.
 
 - **Never commit real personal data:** names (students, colleagues, teachers),
-  school or institution names, personal-identity numbers, file paths containing
-  a username (`/Users/...`), or secrets (API keys, tokens, `.env`).
+  school or institution names, identifying places, personal-identity numbers,
+  file paths containing a username (`/Users/...`), or secrets (API keys,
+  tokens, `.env` contents).
 - **Never commit real exam material:** actual exam questions, question banks and
   assessment data stay in your local project. Examples and test fixtures use
   fabricated questions only.
 - **Use fabricated or anonymised data in every example and test** — for example
   `School A`, `Colleague_A`, `/path/to/project`, an invented question.
-- **Already committed something real?** Deleting the file is not enough — it
-  stays in the git history forever. Stop, scrub the history, rotate any exposed
-  secret, and resolve it before the next push.
+- **Watch quasi-identifiers:** a class plus a date plus a subject can identify a
+  student even with no name attached.
+- **Found real personal data already committed?** Deleting the file is not
+  enough — it remains in the git history. Report it privately (see above) so
+  the history can be scrubbed and any exposed secret rotated.
+
+See [CONTRIBUTING](CONTRIBUTING.md) for the contributor-facing version of these
+rules.
