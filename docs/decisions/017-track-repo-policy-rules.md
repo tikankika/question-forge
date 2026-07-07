@@ -1,13 +1,22 @@
 ---
 type: decision
-status: active
+status: superseded
 created: 2026-06-24
+superseded: 2026-07-07
 origin: code
 project: QuestionForge
 relates_to: [ADR-015, ADR-016]
 ---
 
 # ADR-017: Track the three repo-policy rules in `.claude/rules/`
+
+> **Superseded** by ACDM ADR-017 (*Rule distribution — `.claude/` is dev-tooling;
+> public policy lives in conventional docs*, 2026-06-24) and walked back in #33:
+> the "read by repo-tooling" rationale below was wrong — the tooling that reads
+> these rules is local and has them on disk regardless of git-tracking, and
+> `.claude/rules/*.md` are agent instructions, not contributor-facing policy.
+> `.claude/` is now wholly gitignored; the public data-protection policy lives
+> in `SECURITY.md`. The text below is kept as the historical record.
 
 ## Context
 
