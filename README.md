@@ -11,6 +11,16 @@ QuestionForge helps educators create pedagogically sound assessment questions th
 
 The teacher stays in control at every step — the tools scaffold and document the method; they do not replace the teacher's judgement.
 
+## Development status
+
+> **This is an active development project, published early.** The end-to-end chain — analyse teaching materials, author questions, validate, and export a QTI package for Inspera — works and is in use. It is shared at this stage deliberately, to invite use and critique.
+
+**What is solid, and what is still developing:**
+
+- The **pipeline** (validate question markdown, auto-fix, export to QTI) is the most developed part.
+- **M1 (content analysis)** and **M5 (question formatting)** have built scaffolding; **M2–M4** (assessment planning, generation, quality assurance) are methodology-driven through guided dialogue rather than module-specific tools, by design.
+- The methodology guides and generated question content are under continual refinement.
+
 ## Part of a teaching-and-assessment ecosystem
 
 These tools share one philosophy — *teacher-led: scaffolding, not automation* — and
@@ -156,6 +166,11 @@ Instructional materials
 ## Acknowledgements
 
 QuestionForge builds on established research in assessment design — constructive alignment (Biggs & Tang), formative assessment (Black & Wiliam), and Swedish assessment research (Lundahl, Hirsh).
+
+## Support
+
+- Questions and bugs: [GitHub Issues](https://github.com/tikankika/question-forge/issues)
+- Discussion: [GitHub Discussions](https://github.com/tikankika/question-forge/discussions)
 
 ---
 

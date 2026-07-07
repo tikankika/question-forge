@@ -2,21 +2,16 @@
 
 ## Supported versions
 
-QuestionForge is in early release. Security fixes are provided for the latest
-published version only.
-
 | Version | Supported |
 |---------|-----------|
-| 0.1.x   | ✅        |
-| < 0.1   | ❌        |
+| 0.1.x   | ✅ |
+| < 0.1   | ❌ |
 
 ## Reporting a vulnerability
 
 Please **do not** open a public issue for security problems.
 
-Report vulnerabilities privately through GitHub's
-[private vulnerability reporting](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing-information-about-vulnerabilities/privately-reporting-a-security-vulnerability)
-on this repository (the **Security** tab → **Report a vulnerability**).
+Report vulnerabilities privately through GitHub's [private vulnerability reporting](https://github.com/tikankika/question-forge/security/advisories/new) (the **Security** tab → **Report a vulnerability**).
 
 Please include:
 
@@ -24,9 +19,7 @@ Please include:
 - steps to reproduce (a minimal example if possible),
 - any suggested mitigation.
 
-You can expect an acknowledgement within a reasonable time, and we will keep you
-informed as the issue is assessed and resolved. Responsible disclosure is
-appreciated — please give us time to release a fix before any public disclosure.
+You can expect an acknowledgement within a week, and responsible disclosure is appreciated — please allow time for a fix before any public disclosure.
 
 ## Scope notes
 
