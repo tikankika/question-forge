@@ -1,13 +1,26 @@
 ---
 type: decision
-status: active
+status: superseded
 created: 2026-06-24
+superseded: 2026-07-07
 origin: code
 project: QuestionForge
 relates_to: [ADR-015, ADR-016]
 ---
 
 # ADR-017: Track the three repo-policy rules in `.claude/rules/`
+
+> **Superseded (2026-07-07).** Reversed on review: `.claude/` is development
+> tooling — local assistant configuration, not part of the project — and the
+> premise that the rule files are "read by repo-tooling" did not hold (the
+> tooling reads them from the local disk, not from a clone). The human-facing
+> policy the rules were meant to carry now travels with the repo where readers
+> expect it: the data-protection rule as a **Data protection** section in
+> [SECURITY.md](../../SECURITY.md) (with the contributor-facing version in
+> [CONTRIBUTING.md](../../CONTRIBUTING.md)), the repo boundary implicitly in
+> CONTRIBUTING. The three rule files are untracked and the full `.claude/`
+> directory is git-ignored again. The text below is kept as the historical
+> record of the original decision.
 
 ## Context
 
