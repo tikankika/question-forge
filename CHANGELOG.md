@@ -13,7 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **CONTRIBUTING — sentence-case headings and a standardised licence line.**
+- **CONTRIBUTING — sentence-case headings and a standardised licence line.** Corrected
+  documentation pointers: ADRs live in `docs/decisions/` (not `docs/adr/`), and
+  significant changes start as an issue or discussion (the repo carries no RFC folder).
 - **SECURITY — vulnerability reporting standardised** to GitHub's private vulnerability reporting link, with an aligned supported-versions table and a response-time expectation.
 
 ## [0.1.0] — First public release

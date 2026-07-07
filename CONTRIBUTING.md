@@ -35,7 +35,7 @@ tests, comments, documentation, examples or commit messages. Git history is perm
 
 1. Open an issue with the `enhancement` label
 2. Describe the use case and proposed solution
-3. Reference relevant ADRs or RFCs if applicable
+3. Reference relevant ADRs (`docs/decisions/`) if applicable
 
 ### Code contributions
 
@@ -59,8 +59,8 @@ npm install
 
 #### Development workflow
 
-1. **Check existing ADRs** in `docs/adr/` for architectural context
-2. **Create RFC** for significant changes (see `docs/rfcs/` for examples)
+1. **Check existing ADRs** in `docs/decisions/` for architectural context
+2. **Open an issue or discussion first** for significant changes, so the approach can be agreed before you build
 3. **Write tests** for new functionality
 4. **Follow code style** (see below)
 5. **Update documentation** if needed
@@ -113,10 +113,9 @@ Documentation improvements are always welcome:
 
 Before contributing code, familiarise yourself with:
 
-- **ADR-001**: Two-MCP architecture (qf-scaffolding + qf-pipeline)
-- **ADR-014**: Shared session management
-- **docs/rfcs/**: Design proposals and specifications
-- **WORKFLOW.md**: Complete workflow documentation
+- **README.md**: the two-MCP architecture (qf-scaffolding + qf-pipeline)
+- **WORKFLOW.md**: complete workflow documentation
+- **docs/decisions/**: architecture decision records (ADRs)
 
 ## Communication
 
