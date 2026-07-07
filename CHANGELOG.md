@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Data-protection policy moved to SECURITY.md** — a new *Data protection* section
+  states the non-negotiable "no real personal data in the repo" rule where readers
+  expect it. The three `.claude/rules/` policy files are no longer shipped;
+  `.claude/` is local development tooling and is fully git-ignored again
+  (ADR-017 marked superseded).
 - **CONTRIBUTING — sentence-case headings and a standardised licence line.** Corrected
   documentation pointers: ADRs live in `docs/decisions/` (not `docs/adr/`), and
   significant changes start as an issue or discussion (the repo carries no RFC folder).
